@@ -1,6 +1,9 @@
 provider "cherryservers" {
   auth_token = "${trimspace(file("./creds/cherryservers"))}"
 }
+variable "dokku_version" {
+  default="0.20.0"
+}
 variable "private_key" {
   default = "./id_deploy"
 }
@@ -33,8 +36,8 @@ resource "cherryservers_server" "deployer" {
 
   provisioner "remote-exec" {
     inline = [
-      "wget https://raw.githubusercontent.com/dokku/dokku/v0.20.0/bootstrap.sh",
-      "DOKKU_TAG=v0.20.0 bash bootstrap.sh"
+      "wget https://raw.githubusercontent.com/dokku/dokku/v${var.dokku_version}/bootstrap.sh",
+      "DOKKU_TAG=v${var.dokku_version} bash bootstrap.sh"
     ]
 
     connection {
