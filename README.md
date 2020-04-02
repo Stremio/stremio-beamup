@@ -8,8 +8,11 @@ To deploy this yourself, you'll need:
 
 ## Deployment
 
-1. Register on [Cherryservers](cherryservers.com) and fund your account
-2. Create an API key and paste it into a new file: `creds/cherryservers`
+**WARNING:** this only refers to deploying stremio-addon-paas itself, not deploying apps to it
+
+1. Run `ssh-keygen -t ed25519 -f id_deploy`
+2. Register on [Cherryservers](cherryservers.com) and fund your account
+3. Create an API key and paste it into a new file: `creds/cherryservers`
 
 ## FAQ
 
