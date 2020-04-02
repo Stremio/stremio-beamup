@@ -16,6 +16,7 @@ then
 	exit 0
 fi
 
+GITHUB_USER=`echo $GITHUB_USER | awk '{print tolower($0)}'`
 if [ -z "$GITHUB_USER" ]
 then
 	echo "No GITHUB_USER: unauthorized"
