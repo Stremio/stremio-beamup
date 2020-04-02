@@ -1,0 +1,41 @@
+#!/bin/sh
+
+set -e
+
+###
+# Functions
+###
+
+
+###
+# Commands
+###
+if [ "$1" = "sync-github-keys" ];
+then
+	GITHUB_USER="$2"
+	AUTH_KEYS_PATH=$HOME/.ssh/authorized_keys
+
+	cp $AUTH_KEYS_PATH $AUTH_KEYS_PATH.bkp
+	(
+		# get rid of the previous keys
+		cat $AUTH_KEYS_PATH.bkp | grep -v "^command=\"GITHUB_USER='$GITHUB_USER'"
+		# TODO proper err handling
+		curl --silent "https://github.com/$GITHUB_USER.keys" | while read SSH_KEY
+		do
+			# "restrict" instead of "no-agent-forwarding,no-port-forwarding,no-x11-forwarding": this also disables the pty
+			# the PTY is not needed cause we don't need anything interactive
+			echo "command=\"GITHUB_USER='$GITHUB_USER' beamup-entry \$SSH_ORIGINAL_COMMAND\",restrict $SSH_KEY"
+		done
+	) > $AUTH_KEYS_PATH.stage # && mv $AUTH_KEYS_PATH.stage $AUTH_KEYS_PATH
+	# TODO
+	exit 0
+fi
+
+if [ -z "$GITHUB_USER" ]
+then
+	echo "No GITHUB_USER: unauthorized"
+	exit 1
+fi
+
+echo $GITHUB_USER
+
