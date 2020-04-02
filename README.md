@@ -6,6 +6,11 @@ To deploy this yourself, you'll need:
 * A Cherryservers account and API key
 * Terraform
 
+## Deployment
 
-### FAQ
+1. Register on [Cherryservers](cherryservers.com) and fund your account
+2. Create an API key and paste it into a new file: `creds/cherryservers`
+
+## FAQ
+
 
