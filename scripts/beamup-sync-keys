@@ -1,2 +1,44 @@
 #!/usr/bin/env node
 const fs = require('fs')
+const https = require('https')
+const { promisify } = require('util')
+const writeFile = promisify(fs.writeFile.bind(fs))
+const readFile = promisify(fs.readFile.bind(fs))
+const httpsGet = args => new Promise((resolve, reject) => https.get(args, resolve).on('error', reject))
+
+const [AUTH_KEYS_PATH, GITHUB_USER_RAW] = process.argv.slice(2)
+if (!(AUTH_KEYS_PATH && GITHUB_USER_RAW)) {
+	console.error(`Usage: beamup-sync-keys <path to authorized_keys> <GitHub username>`)
+	process.exit(1)
+}
+const GITHUB_USER = GITHUB_USER_RAW.toLowerCase()
+
+async function fetchKeys(githubUser) {
+	const res = await httpsGet(`https://github.com/${githubUser}.keys`)
+	if (res.statusCode !== 200) throw new Error(`GitHub returned status ${res.status}`)
+	res.setEncoding('utf8')
+	return new Promise((resolve, reject) => {
+		let body = ''
+		res.on('data', d => body += d)
+		res.on('error', reject)
+		res.on('end', () => resolve(body))
+	})
+}
+
+async function getNewAuthKeysContent() {
+	const [content, keys] = await Promise.all([
+		readFile(AUTH_KEYS_PATH),
+		fetchKeys(GITHUB_USER)
+	])
+	const commandStr = `command="GITHUB_USER='${GITHUB_USER}' beamup-entry $SSH_ORIGINAL_COMMAND"`
+	console.log(commandStr)
+
+}
+
+getNewAuthKeysContent()
+	.then(content => writeFile(AUTH_KEYS_PATH, content))
+	.catch(e => {
+		console.error(`Encountered error, quitting`)
+		console.error(e)
+		process.exit(2)
+	})
