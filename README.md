@@ -12,7 +12,8 @@ To deploy this yourself, you'll need:
 
 1. Run `ssh-keygen -t ed25519 -f id_deploy`
 2. Register on [Cherryservers](cherryservers.com) and fund your account
-3. Create an API key and paste it into a new file: `creds/cherryservers`
+3. Create an API key and paste it into a new file: `creds/cherryservers`; paste your numeric project ID into `creds/cherryservers-project-id`
+4. Run `terraform apply`
 
 ## FAQ
 

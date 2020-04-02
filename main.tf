@@ -27,7 +27,7 @@ resource "cherryservers_ssh" "tf_deploy_key" {
 
 # The controller/deployer server
 resource "cherryservers_server" "deployer" {
-  project_id = "101781"
+  project_id = "${trimspace(file("./creds/cherryservers-project-id"))}"
   region = "${var.region}"
   hostname = "stremio-addon-deployer"
   image = "${var.image}"
