@@ -4,3 +4,5 @@ apt install -y vim nodejs
 
 wget https://raw.githubusercontent.com/dokku/dokku/v0.20.0/bootstrap.sh
 sudo DOKKU_TAG=v0.20.0 bash bootstrap.sh
+
+echo "dokku dokku/vhost_enable boolean true" | sudo debconf-set-selections
