@@ -23,5 +23,17 @@ then
 	exit 1
 fi
 
-echo $GITHUB_USER
 
+if [ "$1" = "git-receive-pack" ];
+then
+	# NOTE: this is safe because GitHub usernames cannot have `_` in them
+	APP_NAME="$(echo $2 | tr '/' '_')"
+	if [[ "$APP_NAME" == ${GITHUB_USER}_* ]]
+	then
+		# TODO validate APP_NAME
+		dokku git-receive-pack $APP_NAME
+	else
+		echo "Unauthorized GITHUB_USER"
+		exit 1
+	fi
+fi
