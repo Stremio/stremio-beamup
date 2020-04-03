@@ -3,13 +3,12 @@
 set -e
 
 ###
-# Functions
-###
-
-
-###
 # Commands
 ###
+
+# if we don't do this, dokku just executes that...
+unset SSH_ORIGINAL_COMMAND
+
 if [ "$1" = "sync-github-keys" ];
 then
 	beamup-sync-keys "$HOME/.ssh/authorized_keys" "$2"
