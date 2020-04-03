@@ -31,7 +31,7 @@ then
 	
 	case "$APP_NAME" in
 		# TODO validate APP_NAME
-		${GITHUB_USER}*) dokku git-receive-pack $APP_NAME ;;
+		${GITHUB_USER}_*) dokku git-receive-pack $APP_NAME ;;
 		*)  exit 1 ;;
 	esac
 fi
