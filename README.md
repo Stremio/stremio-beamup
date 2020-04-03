@@ -20,10 +20,13 @@ To deploy this yourself, you'll need:
 3. Create an API key and paste it into a new file: `creds/cherryservers`; paste your numeric project ID into `creds/cherryservers-project-id`
 4. Run `terraform apply`
 
+By default, this will bootstrap a single server called `deployer` that can be used to deploy addons too.
+
 ## FAQ
 
 ### Why Cherryservers?
 
 ### Can I use this as a general purpose PaaS?
 
-### 
+### Does it only support nodejs?
+No, it supports every stack that there's a heroku buildpack for, as well as any Docker container.
