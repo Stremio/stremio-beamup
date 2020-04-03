@@ -36,6 +36,7 @@ resource "cherryservers_server" "deployer" {
 
   provisioner "remote-exec" {
     inline = [
+      "apt install -y nodejs vim",
       "wget https://raw.githubusercontent.com/dokku/dokku/v${var.dokku_version}/bootstrap.sh",
       "DOKKU_TAG=v${var.dokku_version} bash bootstrap.sh"
     ]
