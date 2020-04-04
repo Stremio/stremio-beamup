@@ -11,7 +11,7 @@ unset SSH_ORIGINAL_COMMAND
 
 if [ "$1" = "sync-github-keys" ];
 then
-	beamup-sync-keys "$HOME/.ssh/authorized_keys" "$2"
+	beamup-sync-keys "$HOME/.ssh/authorized_keys" "$2" && echo "Successfully authorized GitHub user $2"
 	exit 0
 fi
 
@@ -21,7 +21,6 @@ then
 	echo "No GITHUB_USER: unauthorized"
 	exit 1
 fi
-
 
 if [ "$1" = "git-receive-pack" ];
 then
