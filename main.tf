@@ -34,19 +34,22 @@ resource "cherryservers_server" "deployer" {
   plan_id = "${var.plan_id}"
   ssh_keys_ids = ["${cherryservers_ssh.tf_deploy_key.id}"]
 
+  connection {
+    host = "${cherryservers_server.deployer.primary_ip}"
+    private_key = "${file(var.private_key)}"
+    timeout = "30m"
+  }
+
+  provisioner "file" {
+    source = "scripts"
+    destination = "/usr/local/bin"
+  }
+
   provisioner "remote-exec" {
     inline = [
       "apt install -y nodejs vim",
       "wget https://raw.githubusercontent.com/dokku/dokku/v${var.dokku_version}/bootstrap.sh",
       "DOKKU_TAG=v${var.dokku_version} bash bootstrap.sh"
     ]
-
-    connection {
-      type = "ssh"
-      user = "root"
-      host = "${cherryservers_server.deployer.primary_ip}"
-      private_key = "${file(var.private_key)}"
-      timeout = "30m"
-    }
   }
 }
