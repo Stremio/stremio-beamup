@@ -1,9 +1,12 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 apt install -y vim nodejs
 
 wget https://raw.githubusercontent.com/dokku/dokku/v0.20.0/bootstrap.sh
 sudo DOKKU_TAG=v0.20.0 bash bootstrap.sh
 
-echo "dokku dokku/vhost_enable boolean false" | sudo debconf-set-selections
-echo "dokku dokku/web_config boolean false" | sudo debconf-set-selections
+echo "dokku dokku/web_config boolean false"		| sudo debconf-set-selections
+echo "dokku dokku/vhost_enable boolean true"		| sudo debconf-set-selections
+echo "dokku dokku/skip_key_file boolean true"           | sudo debconf-set-selections
+echo "dokku dokku/key_file string /root/.ssh/id_rsa.pub"| sudo debconf-set-selections
+echo "dokku dokku/nginx_enable boolean false"           | sudo debconf-set-selections
