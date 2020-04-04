@@ -31,9 +31,9 @@ async function getNewAuthKeysContent() {
 		fetchKeys(GITHUB_USER)
 	])
 	const commandStr = `command="GITHUB_USER='${GITHUB_USER}' beamup-entry $SSH_ORIGINAL_COMMAND"`
-	const minusOldKeys = content.toString().split('\n').filter(x => !x.startsWith(commandStr) && x.trim()).join('\n')
-	const newKeys = keys.split('\n').filter(x => x).map(key => `${commandStr},restrict ${key}`).join('\n')
-	return minusOldKeys + newKeys + '\n'
+	const minusOldKeys = content.toString().split('\n').filter(x => !x.startsWith(commandStr) && x.trim())
+	const newKeys = keys.split('\n').filter(x => x).map(key => `${commandStr},restrict ${key}`)
+	return minusOldKeys.concat(newKeys).join('\n') + '\n'
 }
 
 getNewAuthKeysContent()
