@@ -25,14 +25,13 @@ fi
 if [ "$1" = "git-receive-pack" ];
 then
 	# NOTE: this is safe because GitHub usernames cannot have `_` in them
-	APP_NAME="$(echo $2 | tr '/' '_')"
+	APP_NAME="$(echo $2 | tr '/' '_' | tr -d '"' | tr -d \')"
 	VALIDATION_PATTERN="^[a-zA-Z0-9_-]*$"
 	if [[ ! $APP_NAME =~ $VALIDATION_PATTERN ]]; then
 		exit 1
 	fi
 	case "$APP_NAME" in
 		${GITHUB_USER}_*) dokku git-receive-pack $APP_NAME ;;
-		\'${GITHUB_USER}_*) dokku git-receive-pack $APP_NAME ;;
 		*)  exit 1 ;;
 	esac
 else
