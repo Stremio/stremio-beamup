@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# @TODO better name
+mkdir -p /var/lib/registry
+beamup-sync-swarm > /root/stack.yaml
+docker stack deploy --compose-file /root/stack.yaml beamup 

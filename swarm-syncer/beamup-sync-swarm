@@ -1,30 +1,36 @@
 #!/usr/bin/env node
 
-// @TODO rename to beamup-sync-swarm
-
-
 const http = require('http')
 const httpGet = args => new Promise((resolve, reject) => http.get(args, resolve).on('error', reject))
 
 const REGISTRY_URL = 'http://127.0.0.1:5000'
+// @TODO input
+const DOMAINS = ['stremio.info']
 
-const HEADER = ```version: '3.7'
+const HEADER = `version: '3.7'
+services:`
 
-services:```
+const REGISTRY_TMPL = `   registry:
+        image: registry
+        volumes:
+          - /var/lib/registry:/var/lib/registry
+        ports:
+          - '5000:5000'`
 
-const REGISTRY_TMPL = () => ```registry:
-    image: registry
-    restart: always
-    ports:
-      - '5000:5000'```
-
-const APP_TMP = (appName image, port, vhost) => ```${appName}:
-    image: "${image}"
-    restart: always
-    environment:
-      - VIRTUAL_HOST=${vhost}
-    ports:
-      - "${port}"```
+// @TODO: assigning a random port may not be needed, just use the docker overlay network to reach the container (use it's IP)
+// @TODO: syslog for centralized log collection
+// By default,the restart policy is "any" (it will always restart)
+// @TODO restart max attempts?
+// @TODO hardware limits
+const APP_TMPL = (appName, image, port, vhost) => `   ${appName}:
+        image: localhost:5000/${image}
+        deploy:
+          mode: global
+        environment:
+          - VIRTUAL_HOST=${vhost}
+          - PORT=${port}
+        ports:
+          - '${port}'`
 
 
 async function getImages() {
@@ -39,4 +45,14 @@ async function getImages() {
 	})
 }
 
-getImages().then(console.log)
+async function getConfig() {
+	const { repositories } = await getImages()
+	const repoCfg = (imageName, i) => {
+		const appName = imageName.split('/').pop()
+		const port = 8000 + i
+		const vhost = DOMAINS.map(domain => `${appName}.${domain}`) 
+		return APP_TMPL(appName, imageName+':latest', port, vhost)
+	}
+	return [HEADER, REGISTRY_TMPL].concat(repositories.map(repoCfg)).join('\n')
+}
+getConfig().then(console.log)
