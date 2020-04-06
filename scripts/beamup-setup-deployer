@@ -1,5 +1,8 @@
 #!/usr/bin/env bash
 
+# TODO: input?
+DOMAIN=stremio.info
+
 apt install -y vim nodejs
 
 wget https://raw.githubusercontent.com/dokku/dokku/v0.20.0/bootstrap.sh
@@ -11,5 +14,11 @@ echo "dokku dokku/skip_key_file boolean true"           | sudo debconf-set-selec
 echo "dokku dokku/key_file string /root/.ssh/id_rsa.pub"| sudo debconf-set-selections
 echo "dokku dokku/nginx_enable boolean false"           | sudo debconf-set-selections
 
+# TODO hostname
+#echo "dokku dokku/hostname string deployer.$DOMAIN"	| sudo debconf-set-selections
+
+# disable dokku-installer (the web installer)
+service dokku-installer stop
+service dokku-installer disable
 
 echo 'command="beamup-entry $SSH_ORIGINAL_COMMAND",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILuOA9TOeOLyPJgA1eQ/0zMqqQczz2yiOnqyjOEjaXkn Control Key' >> /home/dokku/.ssh/authorized_keys
