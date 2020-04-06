@@ -32,7 +32,7 @@ resource "cherryservers_server" "deployer" {
   ssh_keys_ids = ["${cherryservers_ssh.tf_deploy_key.id}"]
 
   connection {
-    host = "${cherryservers_server.deployer.primary_ip}"
+    host = "${self.primary_ip}"
     private_key = "${file(var.private_key)}"
     timeout = "30m"
   }
@@ -44,5 +44,31 @@ resource "cherryservers_server" "deployer" {
 
   provisioner "remote-exec" {
     script = "/usr/local/bin/beamup-setup"
+  }
+}
+
+
+# The swarm servers
+# TODO: add deployer in authorized-keys
+resource "cherryservers_server" "swarm" {
+  count = 2
+  project_id = "${trimspace(file("./creds/cherryservers-project-id"))}"
+  region = "${var.region}"
+  hostname = "stremio-beamup-swarm-${count.index}"
+  image = "${var.image}"
+  # ssd_smart16 is 94
+  # E3-1240v3 is 86
+  # E3-1240V5 is 113
+  # E5-1650V2 is 106
+  plan_id = "86"
+  ssh_keys_ids = ["${cherryservers_ssh.tf_deploy_key.id}"]
+
+  connection {
+    host = "${self.primary_ip}"
+    private_key = "${file(var.private_key)}"
+    timeout = "30m"
+  }
+  provisioner "remote-exec" {
+    inline = ["export CHANNEL=stable", "wget -nv -O - https://get.docker.com/ | sh"]
   }
 }
