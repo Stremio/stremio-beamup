@@ -69,6 +69,6 @@ resource "cherryservers_server" "swarm" {
     timeout = "30m"
   }
   provisioner "remote-exec" {
-    inline = ["export CHANNEL=stable", "wget -nv -O - https://get.docker.com/ | sh"]
+    inline = ["export CHANNEL=stable", "wget -nv -O - https://get.docker.com/ | sh", "apt install -y vim nodejs"]
   }
 }
