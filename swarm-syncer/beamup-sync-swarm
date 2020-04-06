@@ -1,0 +1,42 @@
+#!/usr/bin/env node
+
+// @TODO rename to beamup-sync-swarm
+
+
+const http = require('http')
+const httpGet = args => new Promise((resolve, reject) => http.get(args, resolve).on('error', reject))
+
+const REGISTRY_URL = 'http://127.0.0.1:5000'
+
+const HEADER = ```version: '3.7'
+
+services:```
+
+const REGISTRY_TMPL = () => ```registry:
+    image: registry
+    restart: always
+    ports:
+      - '5000:5000'```
+
+const APP_TMP = (appName image, port, vhost) => ```${appName}:
+    image: "${image}"
+    restart: always
+    environment:
+      - VIRTUAL_HOST=${vhost}
+    ports:
+      - "${port}"```
+
+
+async function getImages() {
+	const res = await httpGet(`${REGISTRY_URL}/v2/_catalog`)
+	if (res.statusCode !== 200) throw new Error(`Registry returned status ${res.status}`)
+	res.setEncoding('utf8')
+	return new Promise((resolve, reject) => {
+		let body = ''
+		res.on('data', d => body += d)
+		res.on('error', reject)
+		res.on('end', () => resolve(JSON.parse(body)))
+	})
+}
+
+getImages().then(console.log)
