@@ -11,7 +11,7 @@ const HEADER = `version: '3.7'
 services:`
 
 const REGISTRY_TMPL = `   registry:
-        image: registry
+        image: registry:2
         volumes:
           - /var/lib/registry:/var/lib/registry
         ports:
@@ -29,8 +29,9 @@ const APP_TMPL = (appName, image, port, vhost) => `   ${appName}:
         environment:
           - VIRTUAL_HOST=${vhost}
           - PORT=${port}
+        command: /start web
         ports:
-          - '${port}'`
+          - '${port}:${port}'`
 
 
 async function getImages() {
