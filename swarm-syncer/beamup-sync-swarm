@@ -10,13 +10,6 @@ const DOMAINS = ['stremio.info']
 const HEADER = `version: '3.7'
 services:`
 
-const REGISTRY_TMPL = `   registry:
-        image: registry:2
-        volumes:
-          - /var/lib/registry:/var/lib/registry
-        ports:
-          - '5000:5000'`
-
 // @TODO: assigning a random port may not be needed, just use the docker overlay network to reach the container (use it's IP)
 // @TODO: syslog for centralized log collection
 // By default,the restart policy is "any" (it will always restart)
@@ -26,6 +19,10 @@ const APP_TMPL = (appName, image, port, vhost) => `   ${appName}:
         image: localhost:5000/${image}
         deploy:
           mode: global
+          resources:
+            limits:
+              cpus: '0.5'
+              memory: 256m
         environment:
           - VIRTUAL_HOST=${vhost}
           - PORT=${port}
@@ -54,6 +51,6 @@ async function getConfig() {
 		const vhost = DOMAINS.map(domain => `${appName}.${domain}`) 
 		return APP_TMPL(appName, imageName+':latest', port, vhost)
 	}
-	return [HEADER, REGISTRY_TMPL].concat(repositories.map(repoCfg)).join('\n')
+	return [HEADER].concat(repositories.map(repoCfg)).join('\n')
 }
 getConfig().then(console.log)
