@@ -1,6 +1,22 @@
 #!/usr/bin/env bash
 
-# @TODO better name
+
+# Or actually, alternatively we can do
+# docker service create --name registry --volume /var/lib/registry:/var/lib/registry --publish published=5000,target=5000 registry:2
+
 mkdir -p /var/lib/registry
-beamup-sync-swarm > /root/stack.yaml
-docker stack deploy --compose-file /root/stack.yaml beamup 
+cat <<EOF >registry.yaml
+version: '3.7'
+services:
+   registry:
+        image: registry:2
+        volumes:
+          - /var/lib/registry:/var/lib/registry
+        ports:
+          - '5000:5000'
+EOF
+docker stack deploy --compose-file registry.yaml beamup_control
+
+# @TODO better name
+beamup-sync-swarm > apps.yaml
+docker stack deploy --prune --compose-file apps.yaml beamup 
