@@ -21,4 +21,9 @@ echo "dokku dokku/nginx_enable boolean false"           | sudo debconf-set-selec
 service dokku-installer stop
 service dokku-installer disable
 
+# Add the control key to the dokku user - this key allows to run beamup-entry in a way that only permits syncing GitHub keys
 echo 'command="beamup-entry $SSH_ORIGINAL_COMMAND",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILuOA9TOeOLyPJgA1eQ/0zMqqQczz2yiOnqyjOEjaXkn Control Key' >> /home/dokku/.ssh/authorized_keys
+
+# Install the Dokku registry plugin, allowing each deploy to push to a registry
+# dokku plugin:install https://github.com/dokku/dokku-registry.git registry
+
