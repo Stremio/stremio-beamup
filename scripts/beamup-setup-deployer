@@ -27,3 +27,11 @@ echo 'command="beamup-entry $SSH_ORIGINAL_COMMAND",restrict ssh-ed25519 AAAAC3Nz
 # Install the Dokku registry plugin, allowing each deploy to push to a registry
 # dokku plugin:install https://github.com/dokku/dokku-registry.git registry
 
+# Disable IPV6 otherwise we can't access the Docker registry on localhost:5000 for some reason
+cat <<EOF >/etc/sysctl.conf
+net.ipv6.conf.all.disable_ipv6=1
+net.ipv6.conf.default.disable_ipv6=1
+net.ipv6.conf.lo.disable_ipv6=1
+EOF
+sudo sysctl -p
+
