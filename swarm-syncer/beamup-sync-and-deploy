@@ -2,7 +2,7 @@
 
 
 # Or actually, alternatively we can do
-# docker service create --name registry --volume /var/lib/registry:/var/lib/registry --publish published=5000,target=5000 registry:2
+# docker service create --name beamup_control_registry --mount type=volume,source=/var/lib/registry,destination=/var/lib/registry --publish published=5000,target=5000 registry:2
 
 mkdir -p /var/lib/registry
 cat <<EOF >registry.yaml
@@ -14,6 +14,14 @@ services:
           - /var/lib/registry:/var/lib/registry
         ports:
           - '5000:5000'
+   nginx-proxy:
+        image: jwilder/nginx-proxy
+        deploy:
+          mode: 'global'
+        ports:
+          - '80:80'
+        volumes:
+          - /var/run/docker.sock:/tmp/docker.sock:ro
 EOF
 docker stack deploy --compose-file registry.yaml beamup_control
 
