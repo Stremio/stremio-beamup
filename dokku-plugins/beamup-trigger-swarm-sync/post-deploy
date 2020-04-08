@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+
+# args are $APP $INTERNAL_PORT $INTERNAL_IP_ADDRESS $IMAGE_TAG
+APP=$1
+docker tag dokku/$APP:latest localhost:5000/dokku/$APP:latest
+docker push localhost:5000/dokku/$APP:latest >/dev/null
+# trigger swarm sync
+# TODO -q
+ssh -o StrictHostKeyChecking=no -T root@stremio-swarm-0
