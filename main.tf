@@ -69,6 +69,12 @@ resource "cherryservers_server" "swarm" {
     timeout = "30m"
   }
   provisioner "remote-exec" {
-    inline = ["export CHANNEL=stable", "wget -nv -O - https://get.docker.com/ | sh", "apt install -y vim nodejs"]
+    inline = [
+		"export CHANNEL=stable",
+		"wget -nv -O - https://get.docker.com/ | sh",
+		"apt install -y vim nodejs",
+		"echo -e 'net.ipv6.conf.all.disable_ipv6=1\nnet.ipv6.conf.default.disable_ipv6=1\nnet.ipv6.conf.lo.disable_ipv6=1' >>/etc/sysctl.conf",
+		"sysctl -p",
+	]
   }
 }
