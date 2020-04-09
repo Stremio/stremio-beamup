@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 
+set -eo pipefail
+
 # args are $APP $INTERNAL_PORT $INTERNAL_IP_ADDRESS $IMAGE_TAG
+# see https://github.com/dokku/dokku/blob/master/docs/development/plugin-triggers.md
+
 APP=$1
 docker tag dokku/$APP:latest localhost:5000/dokku/$APP:latest
 docker push localhost:5000/dokku/$APP:latest >/dev/null
