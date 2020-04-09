@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # TODO: input?
-DOMAIN=stremio.info
+DOMAIN=beamup.dev
 
 apt install -y vim nodejs
 
@@ -14,8 +14,8 @@ echo "dokku dokku/skip_key_file boolean true"           | sudo debconf-set-selec
 echo "dokku dokku/key_file string /root/.ssh/id_rsa.pub"| sudo debconf-set-selections
 echo "dokku dokku/nginx_enable boolean false"           | sudo debconf-set-selections
 
-# TODO hostname
-#echo "dokku dokku/hostname string $DOMAIN"	| sudo debconf-set-selections
+echo "dokku dokku/hostname string $DOMAIN"	| sudo debconf-set-selections
+dokku domains:set-global $DOMAIN
 
 # disable dokku-installer (the web installer)
 service dokku-installer stop

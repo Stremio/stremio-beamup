@@ -6,7 +6,7 @@ const httpGet = args => new Promise((resolve, reject) => http.get(args, resolve)
 const START_PORT = 8000
 const REGISTRY_URL = 'http://127.0.0.1:5000'
 // @TODO input
-const DOMAINS = ['stremio.info']
+const DOMAINS = ['beamup.dev']
 
 const HEADER = `version: '3.7'
 services:`
