@@ -19,7 +19,10 @@ services:
         deploy:
           mode: 'global'
         ports:
-          - '80:80'
+          - target: 80
+            published: 80
+            # ensure nginx does not pass through ingress routing
+            mode: host
         volumes:
           - /var/run/docker.sock:/tmp/docker.sock:ro
 EOF
