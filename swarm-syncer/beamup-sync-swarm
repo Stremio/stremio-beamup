@@ -23,6 +23,9 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
             limits:
               cpus: '0.5'
               memory: 256m
+          restart_policy:
+              max_attempts: 20
+              window: 1h
         environment:
           - PORT=${port}
         command: /start web
