@@ -3,6 +3,7 @@
 const http = require('http')
 const httpGet = args => new Promise((resolve, reject) => http.get(args, resolve).on('error', reject))
 
+const START_PORT = 8000
 const REGISTRY_URL = 'http://127.0.0.1:5000'
 // @TODO input
 const DOMAINS = ['stremio.info']
@@ -16,7 +17,7 @@ services:`
 // @TODO restart max attempts?
 // @TODO hardware limits
 const APP_TMPL = (appName, image, port, vhost) => `   ${appName}:
-        image: localhost:5000/${image}
+        image: ${image}
         deploy:
           mode: global
           resources:
@@ -30,10 +31,9 @@ const APP_TMPL = (appName, image, port, vhost) => `   ${appName}:
         ports:
           - '${port}:${port}'`
 
-
-async function getImages() {
-	const res = await httpGet(`${REGISTRY_URL}/v2/_catalog`)
-	if (res.statusCode !== 200) throw new Error(`Registry returned status ${res.status}`)
+async function getJSON(opts) {
+	const res = await httpGet(opts)
+	if (res.statusCode !== 200) throw new Error(`returned status ${res.status}`)
 	res.setEncoding('utf8')
 	return new Promise((resolve, reject) => {
 		let body = ''
@@ -41,15 +41,34 @@ async function getImages() {
 		res.on('error', reject)
 		res.on('end', () => resolve(JSON.parse(body)))
 	})
+
 }
 
-async function getConfig() {
-	const { repositories } = await getImages()
+async function getImages() {
+	return await getJSON(`${REGISTRY_URL}/v2/_catalog`)
+}
+
+async function getPortMapping() {
+	const services = await getJSON({ socketPath: '/var/run/docker.sock', path: '/services' })
+	let ports = {}
+	services.forEach(service => {
+		const { TargetPort, PublishedPort } = service.Endpoint.Ports[0]
+		// @TODO: better imageName?
+		const imageName = service.Spec.Labels['com.docker.stack.image']
+		if (TargetPort === PublishedPort) ports[imageName] = TargetPort
+	})
+	return ports
+}
+
+async function getConfig() {	
+	const [{ repositories }, portMapping] = await Promise.all([getImages(), getPortMapping()])
+	let startPort = Math.max.apply(null, Object.values(portMapping)) || START_PORT
 	const repoCfg = (imageName, i) => {
 		const appName = imageName.split('/').pop()
-		const port = 8000 + i
+		const fullImageName = `localhost:5000/${imageName}:latest`
+		const port = portMapping[imageName] || portMapping[fullImageName] || ++startPort
 		const vhost = DOMAINS.map(domain => `${appName}.${domain}`) 
-		return APP_TMPL(appName, imageName+':latest', port, vhost)
+		return APP_TMPL(appName, fullImageName, port, vhost)
 	}
 	return [HEADER].concat(repositories.map(repoCfg)).join('\n')
 }
