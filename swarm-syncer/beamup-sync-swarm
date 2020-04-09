@@ -21,8 +21,8 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
           mode: global
           resources:
             limits:
-              cpus: '0.5'
-              memory: 256m
+              cpus: '1'
+              memory: 1024m
           restart_policy:
               max_attempts: 20
               window: 1h
