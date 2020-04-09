@@ -1,12 +1,11 @@
 #!/usr/bin/env node
 
+const fs = require('fs')
 const http = require('http')
 const httpGet = args => new Promise((resolve, reject) => http.get(args, resolve).on('error', reject))
 
 const START_PORT = 8000
 const REGISTRY_URL = 'http://127.0.0.1:5000'
-// @TODO input
-const DOMAINS = ['beamup.dev']
 
 const HEADER = `version: '3.7'
 services:`
@@ -16,7 +15,7 @@ services:`
 // By default,the restart policy is "any" (it will always restart)
 // @TODO restart max attempts?
 // @TODO hardware limits
-const APP_TMPL = (appName, image, port, vhost) => `   ${appName}:
+const APP_TMPL = (appName, image, port) => `   ${appName}:
         image: ${image}
         deploy:
           mode: global
@@ -25,11 +24,39 @@ const APP_TMPL = (appName, image, port, vhost) => `   ${appName}:
               cpus: '0.5'
               memory: 256m
         environment:
-          - VIRTUAL_HOST=${vhost}
           - PORT=${port}
         command: /start web
         ports:
           - '${port}:${port}'`
+
+const APP_NGINX_TMPL = (appName, port) => `proxy_cache_path /var/lib/nginx/cache levels=1:2 keys_zone=${appName}_cache:10m max_size=1g inactive=600m use_temp_path=off;
+upstream ${appName} {
+        server 127.0.0.1:${port};
+        keepalive 300;
+}
+
+server {
+	server_name ~^${appName}.;
+        access_log     /var/log/nginx/nginx.vhost.access.log;
+        error_log      /var/log/nginx/nginx.vhost.error.log;
+	#listen     443;
+	#ssl        on;
+	#ssl_certificate  /etc/nginx/cert.pem;
+	#ssl_certificate_key /etc/nginx/cert.key;
+        listen 80;
+	location / {
+                proxy_pass http://${appName};
+                proxy_http_version 1.1;
+                proxy_set_header Connection "";
+		proxy_cache market_cache;
+		proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+		proxy_hide_header X-Powered-By;
+		proxy_buffering on;
+		add_header X-Cache-Status $upstream_cache_status;
+        }
+}
+
+`
 
 async function getJSON(opts) {
 	const res = await httpGet(opts)
@@ -60,16 +87,30 @@ async function getPortMapping() {
 	return ports
 }
 
-async function getConfig() {	
+async function getConfigs() {	
 	const [{ repositories }, portMapping] = await Promise.all([getImages(), getPortMapping()])
 	let startPort = Math.max.apply(null, Object.values(portMapping)) || START_PORT
-	const repoCfg = (imageName, i) => {
-		const appName = imageName.split('/').pop()
+	const apps = repositories.map(imageName => {
+		const name = imageName.split('/').pop()
 		const fullImageName = `localhost:5000/${imageName}:latest`
 		const port = portMapping[imageName] || portMapping[fullImageName] || ++startPort
-		const vhost = DOMAINS.map(domain => `${appName}.${domain}`) 
-		return APP_TMPL(appName, fullImageName, port, vhost)
+		return { name, fullImageName, port }
+	})
+	const swarmCfgs = apps.map(app => APP_TMPL(app.name, app.fullImageName, app.port))
+	const nginxCfgs = apps.map(app => APP_NGINX_TMPL(app.name, app.port))
+	return {
+		swarm: [HEADER].concat(swarmCfgs).join('\n'),
+		nginx: nginxCfgs.join('\n'),
 	}
-	return [HEADER].concat(repositories.map(repoCfg)).join('\n')
 }
-getConfig().then(console.log)
+
+const swarmCfg = process.argv[2]
+const nginxCfg = process.argv[3]
+if (!(swarmCfg && swarmCfg.endsWith('.yaml') && nginxCfg && nginxCfg.endsWith('.conf'))) {
+	console.log('usage: beamup-sync-swarm <path to swarm yaml> <path to nginx config>')
+	process.exit(1)
+}
+getConfigs().then(cfgs => {
+	fs.writeFileSync(swarmCfg, cfgs.swarm)
+	fs.writeFileSync(nginxCfg, cfgs.nginx)
+})

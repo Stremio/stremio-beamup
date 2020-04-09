@@ -28,6 +28,5 @@ services:
 EOF
 docker stack deploy --compose-file registry.yaml beamup_control
 
-# @TODO better name
-beamup-sync-swarm > apps.yaml
+beamup-sync-swarm apps.yaml apps.conf
 docker stack deploy --prune --compose-file apps.yaml beamup 
