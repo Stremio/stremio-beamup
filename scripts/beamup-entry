@@ -27,6 +27,7 @@ then
 	# NOTE: this is safe because GitHub usernames cannot have `_` in them
 	APP_NAME="$(echo $2 | tr '/' '_' | tr -d '"' | tr -d \')"
 	VALIDATION_PATTERN="^[a-zA-Z0-9_-]*$"
+	GITHUB_USER_HASHED=$( echo $GITHUB_USER | shasum -a 256 | cut -c1-12 )
 	if [[ ! $APP_NAME =~ $VALIDATION_PATTERN ]]; then
 		exit 1
 	fi
