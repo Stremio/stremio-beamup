@@ -73,7 +73,7 @@ resource "cherryservers_server" "swarm" {
 		"export CHANNEL=stable",
 		"wget -nv -O - https://get.docker.com/ | sh",
 		"apt install -y vim nodejs nginx",
-		"echo -e 'net.ipv6.conf.all.disable_ipv6=1\nnet.ipv6.conf.default.disable_ipv6=1\nnet.ipv6.conf.lo.disable_ipv6=1' >>/etc/sysctl.conf",
+		"echo -e 'net.ipv6.conf.all.disable_ipv6=1\nnet.ipv6.conf.default.disable_ipv6=1\nnet.ipv6.conf.lo.disable_ipv6=1\nvm.swappiness=0\nvm.overcommit_memory=1' >>/etc/sysctl.conf",
 		"sysctl -p",
 	]
   }
