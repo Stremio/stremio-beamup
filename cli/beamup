@@ -2,12 +2,12 @@
 
 set -e
 
-
 HOST=$1
 
-if [ "$2" = "sync-github-keys" ]
-then
+sync-github-keys() {
+	local CONTROL_KEY GITHUB_USERNAME
 	CONTROL_KEY=`mktemp`
+	GITHUB_USERNAME=$1
 	# This priv key is intended to be public; we base64 encode it only so that it doesn't get automatically detected
 	# by whitehat bots that send warnings
 	echo "LS0tLS1CRUdJTiBPUEVOU1NIIFBSSVZBVEUgS0VZLS0tLS0KYjNCbGJuTnphQzFyWlhrdGRqRUFB
@@ -19,12 +19,41 @@ Ymd1NXZzbXUyM1VydU9BOVRPZU9MeVBKZ0ExZVEvMHpNcQpxUWN6ejJ5aU9ucXlqT0VqYVhrbkFB
 QUFFR2wyYjBCcGRtOHRkR2hwYm10d1lXUUJBZ01FQlE9PQotLS0tLUVORCBPUEVOU1NIIFBSSVZB
 VEUgS0VZLS0tLS0K" | base64 -d > $CONTROL_KEY
 	chmod 0700 $CONTROL_KEY
-	ssh -q -i $CONTROL_KEY dokku@"$HOST" sync-github-keys "$3"
-
+	ssh -q -i $CONTROL_KEY dokku@"$HOST" sync-github-keys "$GITHUB_USERNAME"
 	rm $CONTROL_KEY
+}
+
+if [ -z $HOST ]
+then
+	echo "Usage: beamup <host> <command>"
+	exit 1
+fi
+
+if [ "$2" = "sync-github-keys" ]
+then
+	if [ -z $3 ]; then
+		echo "Usage: beamup <host> sync-github-keys <github username>"
+		exit 1
+	fi
+	sync-github-keys $3
 	exit 0
 fi
 
-echo "unsupported command"
+if [ "$2" = "add-remote" ]
+then
+	GITHUB_USERNAME=$3
+	if [ -z $3 ] || [ -z $4 ]; then
+		echo "Usage: beamup <host> add-remote <github username> <app name>"
+		exit 1
+	fi
+	GITHUB_USERNAME_HASHED=$( echo $GITHUB_USERNAME | shasum -a 256 | cut -c1-12 )
+	# TODO automatic repo name
+	git remote add beamup dokku@$HOST:$GITHUB_USERNAME_HASHED/$4 && echo Successfully added remote beamup
+	sync-github-keys $GITHUB_USERNAME
+	exit 0
+fi
+
+echo "Usage: beamup <host> <command>"
+echo "unsupported command; supported: sync-github-keys, add-remote"
 exit 1
 
