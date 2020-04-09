@@ -39,23 +39,23 @@ upstream ${appName} {
 }
 
 server {
-	server_name ~^${appName}.;
+        server_name ~^${appName}.;
         access_log     /var/log/nginx/nginx.vhost.access.log;
         error_log      /var/log/nginx/nginx.vhost.error.log;
-	#listen     443;
-	#ssl        on;
-	#ssl_certificate  /etc/nginx/cert.pem;
-	#ssl_certificate_key /etc/nginx/cert.key;
+        #listen     443;
+        #ssl        on;
+        #ssl_certificate  /etc/nginx/cert.pem;
+        #ssl_certificate_key /etc/nginx/cert.key;
         listen 80;
-	location / {
+        location / {
                 proxy_pass http://${appName};
                 proxy_http_version 1.1;
                 proxy_set_header Connection "";
-		proxy_cache market_cache;
-		proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
-		proxy_hide_header X-Powered-By;
-		proxy_buffering on;
-		add_header X-Cache-Status $upstream_cache_status;
+                proxy_cache market_cache;
+                proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
+                proxy_hide_header X-Powered-By;
+                proxy_buffering on;
+                add_header X-Cache-Status $upstream_cache_status;
         }
 }
 
@@ -90,7 +90,7 @@ async function getPortMapping() {
 	return ports
 }
 
-async function getConfigs() {	
+async function getConfigs() {
 	const [{ repositories }, portMapping] = await Promise.all([getImages(), getPortMapping()])
 	let startPort = Math.max.apply(null, Object.values(portMapping)) || START_PORT
 	const apps = repositories.map(imageName => {
