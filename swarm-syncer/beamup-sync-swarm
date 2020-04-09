@@ -32,7 +32,7 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
         ports:
           - '${port}:${port}'`
 
-const APP_NGINX_TMPL = (appName, port) => `proxy_cache_path /var/lib/nginx/cache levels=1:2 keys_zone=${appName}_cache:10m max_size=1g inactive=600m use_temp_path=off;
+const APP_NGINX_TMPL = (appName, port) => `proxy_cache_path /var/lib/nginx/cache_${appName} levels=1:2 keys_zone=${appName}_cache:10m max_size=1g inactive=600m use_temp_path=off;
 upstream ${appName} {
         server 127.0.0.1:${port};
         keepalive 300;
@@ -51,7 +51,7 @@ server {
                 proxy_pass http://${appName};
                 proxy_http_version 1.1;
                 proxy_set_header Connection "";
-                proxy_cache market_cache;
+                proxy_cache ${appName}_cache;
                 proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504;
                 proxy_hide_header X-Powered-By;
                 proxy_buffering on;
