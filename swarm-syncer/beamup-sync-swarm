@@ -2,7 +2,8 @@
 
 const fs = require('fs')
 const http = require('http')
-const httpRequest = args => new Promise((resolve, reject) => http.request(args, resolve).on('error', reject).end(args.body))
+const https = require('https')
+const request = (http, args) => new Promise((resolve, reject) => http.request(args, resolve).on('error', reject).end(args.body))
 
 const START_PORT = 8000
 const REGISTRY_URL = 'http://127.0.0.1:5000'
@@ -64,9 +65,9 @@ server {
 
 `
 
-async function getJSON(opts) {
-	const res = await httpRequest(opts)
-	if (res.statusCode !== 200) throw new Error(`returned status ${res.status}`)
+async function getJSON(http, opts) {
+	const res = await request(http, opts)
+	if (res.statusCode !== 200) throw new Error(`returned status ${res.statusCode}`)
 	res.setEncoding('utf8')
 	return new Promise((resolve, reject) => {
 		let body = ''
@@ -78,11 +79,11 @@ async function getJSON(opts) {
 }
 
 async function getImages() {
-	return await getJSON(`${REGISTRY_URL}/v2/_catalog`)
+	return await getJSON(http, `${REGISTRY_URL}/v2/_catalog`)
 }
 
 async function getPortMapping() {
-	const services = await getJSON({ socketPath: '/var/run/docker.sock', path: '/services' })
+	const services = await getJSON(http, { socketPath: '/var/run/docker.sock', path: '/services' })
 	let ports = {}
 	services.forEach(service => {
 		const { TargetPort, PublishedPort } = service.Endpoint.Ports[0]
@@ -125,8 +126,9 @@ getConfigs().then(cfgs => {
 		cfgs.apps.forEach(app => {
 			ips.forEach(ip => {
 				const body = JSON.stringify({ type: 'A', name: app.name, content: ip, ttl: 120, proxied: true })
-				getJSON({
-					url: `https://api.cloudflare.com/client/v4/zones/${process.env.CF_ZONE_ID}/dns_records`,
+				getJSON(https, {
+					hostname: 'api.cloudflare.com',
+					path: `/client/v4/zones/${process.env.CF_ZONE_ID}/dns_records`,
 					headers: {
 						'content-type': 'application/json',
 						authorization: `Bearer ${process.env.CF_TOKEN}`
@@ -134,8 +136,6 @@ getConfigs().then(cfgs => {
 					method: 'POST',
 					body
 				})
-					.then(console.log)
-					.catch(console.error)
 			})
 		})
 	}
