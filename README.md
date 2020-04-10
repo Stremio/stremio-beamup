@@ -2,7 +2,7 @@
 🛠️ A platform as a service (PaaS) hosting for Stremio addons: as easy a Heroku/Now.sh, but DYI and without the restrictions.
 
 It is based on [Dokku](https://github.com/dokku/dokku), but with two significant differences:
-* It's designed with public use in mind - you can authenticate yourself using your GitHub account and push apps
+* It's designed with public use in mind - you can authenticate yourself using your GitHub account and push addons
 * It only supports Stremio addons and it's optimized for them (by using specific caching policies)
 
 
@@ -13,7 +13,9 @@ To deploy this yourself, you'll need:
 
 ## Deployment
 
-**WARNING:** this only refers to deploying stremio-beamup itself, not deploying apps to it
+**WARNING:** this only refers to deploying stremio-beamup itself, not deploying addons to it
+
+**WARNING:** automated deploying of Beamup is a WIP (Docker Swarm is not automatically configured, among other things)
 
 1. Run `ssh-keygen -t ed25519 -f id_deploy`
 2. Register on [Cherryservers](cherryservers.com) and fund your account
@@ -25,7 +27,7 @@ By default, this will bootstrap a single server called `deployer` that can be us
 
 ## Deploying an addon
 
-To deploy an addon, you first need to have your SSH key added to your GitHub account; then, `cd` into the directory of your app, and do `./cli/beamup <beamup deployer hostname> <github username> <app name>`; then, `git push beamup master`
+To deploy an addon, you first need to have your SSH key added to your GitHub account; then, `cd` into the directory of your addon, and do `./cli/beamup <beamup deployer hostname> <github username> <addon name>`; then, `git push beamup master`
 
 Prerequisites and good to know:
 * Works on UNIX-like operating systems (Linux, macOS) but it should also work on Windows in Git Bash or the Linux subsystem
