@@ -54,7 +54,8 @@ server {
                 proxy_set_header Connection "";
                 proxy_cache ${appName}_cache;
                 proxy_cache_use_stale error timeout http_500 http_502 http_503 http_504 updating;
-                proxy_cache_background_update on;
+                # this setting is too much, cause with two layers of cache it means that the top layer will index a stale resp
+                #proxy_cache_background_update on;
                 proxy_cache_lock on;
                 proxy_hide_header X-Powered-By;
                 proxy_buffering on;
@@ -124,6 +125,7 @@ getConfigs().then(cfgs => {
 	if (process.env.CF_TOKEN && process.env.CF_ORIGIN_IPS && process.env.CF_ZONE_ID) {
 		const ips = process.env.CF_ORIGIN_IPS.split(',')
 		cfgs.apps.forEach(app => {
+			// @TODO: err handling, taking care of old records
 			ips.forEach(ip => {
 				const body = JSON.stringify({ type: 'A', name: app.name, content: ip, ttl: 120, proxied: true })
 				getJSON(https, {
