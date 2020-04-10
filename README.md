@@ -40,8 +40,10 @@ Prerequisites and good to know:
 ## FAQ
 
 ### Why Cherryservers?
+Because they have a Terraform provider and you can pay with Bitcoin.
 
 ### Can I use this as a general purpose PaaS?
+No - it performs addon-specific checks/optimizations. You can easily modify it for general-purpose usage though, by tweaking NGINX configs and Dokku CHECKS.
 
 ### Does it only support nodejs?
-No, it supports every stack that there's a heroku buildpack for, as well as any Docker container.
+No, it supports every stack that there's a heroku buildpack for, as well as any repo that has a `Dockerfile`.
