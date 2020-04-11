@@ -22,7 +22,7 @@ then
 	exit 1
 fi
 
-if [ "$1" = "git-receive-pack" ];
+if [ "$1" = "git-receive-pack" ] || [ "$1" = "config:set" ] || [ "$1" = "config:get" ];
 then
 	# NOTE: this is safe because GitHub usernames cannot have `_` in them
 	APP_NAME="$(echo $2 | tr '/' '_' | tr -d '"' | tr -d \')"
@@ -37,7 +37,7 @@ then
 		exit 1
 	fi
 	case "$APP_NAME" in
-		${GITHUB_USER_HASHED}_*) dokku git-receive-pack $APP_NAME ;;
+		${GITHUB_USER_HASHED}_*) dokku $1 $APP_NAME $3;;
 		*)  exit 1 ;;
 	esac
 else
