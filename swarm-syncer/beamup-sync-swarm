@@ -6,6 +6,7 @@ const https = require('https')
 const request = (http, args) => new Promise((resolve, reject) => http.request(args, resolve).on('error', reject).end(args.body))
 
 const START_PORT = 8000
+const TOTAL_APP_LIMIT = 300
 const REGISTRY_URL = 'http://127.0.0.1:5000'
 
 const HEADER = `version: '3.7'
@@ -104,6 +105,7 @@ async function getConfigs() {
 		const port = portMapping[imageName] || portMapping[fullImageName] || ++startPort
 		return { name, fullImageName, port }
 	})
+	if (apps.length > TOTAL_APP_LIMIT) throw new Error('app limit exceeded')
 	const swarmCfgs = apps.map(app => APP_TMPL(app.name, app.fullImageName, app.port))
 	const nginxCfgs = apps.map(app => APP_NGINX_TMPL(app.name, app.port))
 	return {
