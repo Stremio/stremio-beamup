@@ -27,7 +27,7 @@ By default, this will bootstrap a single server called `deployer` that can be us
 
 ## Deploying an addon
 
-To deploy an addon, you first need to have your SSH key added to your GitHub account; then, `cd` into the directory of your addon, and do `./cli/beamup <beamup deployer hostname> <github username> <addon name>`; then, `git push beamup master`
+To deploy an addon, you first need to have your SSH key added to your GitHub account; then, `cd` into the directory of your addon, and do `./cli/beamup <beamup deployer hostname> add-remote <github username> <addon name>`; then, `git push beamup master`
 
 Prerequisites and good to know:
 * Works on UNIX-like operating systems (Linux, macOS) but it should also work on Windows in Git Bash or the Linux subsystem
