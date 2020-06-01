@@ -6,12 +6,16 @@ variable "private_key" {
     default = "./id_deploy"
 }
 
+variable "public_keys" {
+    default = "./authorized_keys"
+}
+
 variable "region" {
     default = "EU-East-1"
 }
 
 variable "image" {
-    default = "Ubuntu 18.04 64bit"
+    default = "Debian 9 64bit"
 }
 
 variable "domain" {
@@ -25,6 +29,10 @@ variable "swarm_nodes" {
 # corresponds to ssd_smart16
 variable "plan_id" {
     default = "94"
+}
+
+variable "username" {
+	default = "beamup"
 }
 
 resource "cherryservers_ssh" "tf_deploy_key" {
@@ -49,15 +57,23 @@ resource "cherryservers_server" "deployer" {
 resource "null_resource" "deployer_setup" {
     depends_on = [ "cherryservers_server.deployer" ]
 
+#    provisioner "local-exec" {
+#        command = "echo 'Waiting for package lock...' && sleep 90"
+#    }
+
+	provisioner "local-exec" {
+		command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='127.0.1.1 stremio-addon-deployer'\" deployer"
+	}
+
 	#
 	# Install packages
 	#
 	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m apt -a 'name=nodejs state=present update_cache=yes' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+		command = "ansible -T 30 -u root -m apt -a 'name=nodejs state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
 	}
 
 	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m apt -a 'name=vim-tiny state=present update_cache=yes' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+		command = "ansible -T 30 -u root -m apt -a 'name=vim-tiny state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
 	}
 
 	#
@@ -90,6 +106,11 @@ resource "cherryservers_server" "swarm" {
         Name        = "swarm"
         Environment = "Stremio Beamup"
     }
+
+    # XXX: move to a separate resource
+	# provisioner "local-exec" {
+	#	command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='127.0.1.1 stremio-beamup-swarm-${count.index}'\" swarm-${count.index}"
+	# }
 }
 
 
@@ -97,17 +118,21 @@ resource "null_resource" "swarm_docker_create" {
     depends_on = [ "cherryservers_server.swarm" ]
 
 	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m shell -a 'CHANNEL=stable wget -nv -O - https://get.docker.com/ | sh ' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+		command = "ansible-galaxy install -f geerlingguy.docker"
 	}
 
 	provisioner "local-exec" {
-		command = "echo 'Waiting for dpkg lock...' && sleep 60"
+		command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/docker.yml"
 	}
 }
 
 resource "null_resource" "swarm_os_setup" {
     depends_on = [ "null_resource.swarm_docker_create" ]
 
+
+#    provisioner "local-exec" {
+#        command = "echo 'Waiting for package lock...' && sleep 90"
+#    }
 
 	#
 	# Fine tune some sysctl values
@@ -200,5 +225,36 @@ resource "null_resource" "swarm_docker_setup" {
 
 	provisioner "local-exec" {
 		command = "ansible -T 30 -u root -m shell -a '/usr/local/bin/beamup-sync-and-deploy' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+	}
+}
+
+resource "null_resource" "ansible_beamup_users" {
+    depends_on = [ "null_resource.swarm_docker_setup", "null_resource.deployer_setup"  ]
+
+	provisioner "local-exec" {
+		command = "ansible-galaxy install -f juju4.adduser"
+	}
+
+	provisioner "local-exec" {
+		command = "ansible -T 30 -u root -m apt -a 'name=sudo state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+	}
+
+	provisioner "local-exec" {
+		command = "ansible-playbook -b -u root --ssh-extra-args='-o StrictHostKeyChecking=no' --extra-vars 'username=${var.username}' --extra-vars 'user_pubkey=${format("%s/%s", path.module, var.public_keys)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/users.yml"
+	}
+
+	# XXX: ensire sudo does not ask for password
+	provisioner "local-exec" {
+		command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/sudoers regexp='^(.*)%sudo(.*)' line='%sudo ALL=(ALL:ALL) NOPASSWD:ALL'\" all"
+	}
+}
+
+resource "null_resource" "ansible_configure_ssh" {
+	depends_on = [
+		"null_resource.ansible_beamup_users",
+	]
+
+	provisioner "local-exec" {
+		command = "ansible-playbook -b -u root --ssh-extra-args='-o StrictHostKeyChecking=no' --extra-vars 'sshd_config=${path.cwd}/ansible-files/sshd_config' --extra-vars 'banner=${path.module}/ansible-files/banner' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/sshd.yml"
 	}
 }
