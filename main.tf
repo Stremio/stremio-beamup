@@ -289,3 +289,17 @@ resource "null_resource" "ansible_configure_cron" {
 		command = "ansible-playbook -b -u beamup --ssh-extra-args='-o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/cron.yml"
 	}
 }
+
+resource "null_resource" "ansible_swarn_disable_swap" {
+	depends_on = [
+		"null_resource.ansible_configure_ssh",
+	]
+
+	provisioner "local-exec" {
+		command = "ansible-galaxy install -f geerlingguy.swap"
+	}
+
+	provisioner "local-exec" {
+		command = "ansible-playbook -b -u beamup --ssh-extra-args='-o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/disable-swap.yml"
+	}
+}
