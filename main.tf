@@ -65,6 +65,10 @@ resource "null_resource" "deployer_setup" {
 		command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='127.0.1.1 stremio-addon-deployer'\" deployer"
 	}
 
+	provisioner "local-exec" {
+		command = "ansible -m shell -b  -u root --ssh-extra-args='-o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a 'curl -sL https://deb.nodesource.com/setup_12.x | bash - ' deployer"
+	}
+
 	#
 	# Install packages
 	#
@@ -106,11 +110,6 @@ resource "cherryservers_server" "swarm" {
         Name        = "swarm"
         Environment = "Stremio Beamup"
     }
-
-    # XXX: move to a separate resource
-	# provisioner "local-exec" {
-	#	command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='127.0.1.1 stremio-beamup-swarm-${count.index}'\" swarm-${count.index}"
-	# }
 }
 
 
@@ -126,13 +125,18 @@ resource "null_resource" "swarm_docker_create" {
 	}
 }
 
+resource "null_resource" "swarm_hosts" {
+    count = "${var.swarm_nodes}"
+
+    depends_on = [ "cherryservers_server.swarm" ]
+
+    provisioner "local-exec" {
+        command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='127.0.1.1 stremio-beamup-swarm-${count.index}'\" swarm-${count.index}"
+    }
+}
+
 resource "null_resource" "swarm_os_setup" {
     depends_on = [ "null_resource.swarm_docker_create" ]
-
-
-#    provisioner "local-exec" {
-#        command = "echo 'Waiting for package lock...' && sleep 90"
-#    }
 
 	#
 	# Fine tune some sysctl values
@@ -153,6 +157,10 @@ resource "null_resource" "swarm_os_setup" {
 	#
 	# Install packages
 	#
+
+	provisioner "local-exec" {
+		command = "ansible -m shell -b  -u root --ssh-extra-args='-o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a 'curl -sL https://deb.nodesource.com/setup_12.x | bash - ' swarm"
+	}
 
 	provisioner "local-exec" {
 		command = "ansible -T 30 -u root -m apt -a 'name=nodejs state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
@@ -209,7 +217,7 @@ resource "null_resource" "swarm_docker_join" {
 }
 
 resource "null_resource" "swarm_docker_setup" {
-    depends_on = [ "null_resource.swarm_docker_join" ]
+    depends_on = [ "null_resource.swarm_docker_join", "null_resource.swarm_hosts" ]
 
 
 	#
@@ -254,6 +262,10 @@ resource "null_resource" "ansible_beamup_users" {
 	}
 }
 
+
+#
+# After creating this resource, root access via SSH is forbidden; login as user 'beamup' instead
+#
 resource "null_resource" "ansible_configure_ssh" {
 	depends_on = [
 		"null_resource.ansible_beamup_users",
@@ -261,5 +273,19 @@ resource "null_resource" "ansible_configure_ssh" {
 
 	provisioner "local-exec" {
 		command = "ansible-playbook -b -u root --ssh-extra-args='-o StrictHostKeyChecking=no' --extra-vars 'sshd_config=${path.cwd}/ansible-files/sshd_config' --extra-vars 'banner=${path.module}/ansible-files/banner' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/sshd.yml"
+	}
+}
+
+resource "null_resource" "ansible_configure_cron" {
+	depends_on = [
+		"null_resource.ansible_configure_ssh",
+	]
+
+	provisioner "local-exec" {
+		command = "ansible-galaxy install -f manala.cron"
+	}
+
+	provisioner "local-exec" {
+		command = "ansible-playbook -b -u beamup --ssh-extra-args='-o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/cron.yml"
 	}
 }
