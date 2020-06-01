@@ -1,0 +1,43 @@
+- hosts: all
+  tasks:
+    - name: Add banner
+      copy:
+        src: "{{ banner }}"
+        dest: /etc/issue.net
+        owner: root
+        group: root
+        mode: u=rw,g=r
+    
+    - name: Add SSH config
+      copy:
+        src: "{{ sshd_config }}"
+        dest: /etc/ssh/sshd_config
+        owner: root
+        group: root
+        mode: u=rw,g=r
+
+    - name: Disable banner for icinga
+      command: touch /home/icinga/.hushlogin
+
+    - name: Double check that password and root login are disabled
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        state: absent
+        regexp: "{{ item }}"
+      with_items:
+        - 'PermitRootLogin yes'
+        - 'PasswordAuthentication yes'
+    
+    - name: Double check that password and root login are disabled
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        state: absent
+        regexp: "{{ item }}"
+      with_items:
+        - 'PermitRootLogin yes'
+        - 'PasswordAuthentication yes'
+    
+    - name: reload sshd
+      service:
+        name: sshd
+        state: restarted

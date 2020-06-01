@@ -1,0 +1,10 @@
+- hosts: all
+  roles:
+    - role: juju4.adduser
+      adduser_user_name: "{{ username }}"
+      adduser_user_comments: "{{ username }}"
+      adduser_groups: [ "sudo", "docker" ]
+      adduser_sudoroot: false
+      adduser_password: '$6$2FwAyolAc0YIi0CT$ze5thp7FZd2Thup35ebhLJhdBxoWVSYkREcMcKZjFhzQf0T7vO6LY047aPOe1fpKxAq.o4yj2FnBCuso2J.Z3/' # ureiCohzeiphie5iey2chaeX
+      adduser_public_keys:
+        - "{{ user_pubkey }}"
