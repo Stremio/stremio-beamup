@@ -1,0 +1,55 @@
+- hosts: all
+  tasks:
+    - name: Allow related and established connections
+      iptables:
+        chain: INPUT
+        ctstate: ESTABLISHED,RELATED
+        jump: ACCEPT
+    
+    - name: Allow ssh
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 22
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Accept new SSH connections
+
+    - name: Allow plain HTTP
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 80
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Accept new plain HTTP connections
+
+    - name: Allow HTTPS
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 443
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Accept new HTTPS connections
+
+    - name: Allow SSH tunels on port 5000
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 5000
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Allow SSH tunel connections on port 5000
+
+    - name: Set the policy for the INPUT chain to DROP
+      iptables:
+        chain: INPUT
+        policy: DROP
+
+    - name: save iptables
+      shell: 'iptables-save > /etc/iptables/rules.v4'
