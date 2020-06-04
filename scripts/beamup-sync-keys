@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env nodejs
 const fs = require('fs')
 const https = require('https')
 const { promisify } = require('util')
