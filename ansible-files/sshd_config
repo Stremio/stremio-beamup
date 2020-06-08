@@ -124,7 +124,7 @@ Subsystem sftp	/usr/lib/openssh/sftp-server
 
 ClientAliveInterval 120
 PasswordAuthentication no
-AllowUsers beamup
+AllowUsers beamup dokku
 
 PermitRootLogin no
 Banner /etc/issue.net
