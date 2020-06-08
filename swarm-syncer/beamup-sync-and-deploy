@@ -29,4 +29,7 @@ EOF
 docker stack deploy --compose-file registry.yaml beamup_control
 
 beamup-sync-swarm apps.yaml apps.conf
-docker stack deploy --prune --compose-file apps.yaml beamup 
+APPS_COUNT=`cat apps.yaml | grep image | wc -l`
+if [ $APPS_COUNT -gt 0 ] ; then
+	docker stack deploy --prune --compose-file apps.yaml beamup
+fi
