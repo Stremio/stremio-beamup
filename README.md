@@ -10,19 +10,21 @@ To deploy this yourself, you'll need:
 
 * A Cherryservers account and API key
 * Terraform
+* Ansible
+* Go & [Terraform inventory](https://github.com/adammck/terraform-inventory)
 
 ## Deployment
 
 **WARNING:** this only refers to deploying stremio-beamup itself, not deploying addons to it
 
-**WARNING:** automated deploying of Beamup is a WIP (Docker Swarm is not automatically configured, among other things)
 
 1. Run `ssh-keygen -t ed25519 -f id_deploy`
 2. Register on [Cherryservers](cherryservers.com) and fund your account
 3. Create an API key and paste it into a new file: `creds/cherryservers`; paste your numeric project ID into `creds/cherryservers-project-id`
-4. Run `terraform apply`
+4. Start an ssh-agent & load the key from step 1 into the agent - `ssh-add id_deploy`
+5. Run `terraform apply`
 
-By default, this will bootstrap a single server called `deployer` that can be used to deploy addons too.
+By default, this will bootstrap a single server called `deployer` that can be used to deploy addons too and a docker swarm with two nodes where the addons will be deployed.
 
 
 ## Deploying an addon
