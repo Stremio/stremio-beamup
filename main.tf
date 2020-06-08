@@ -142,7 +142,7 @@ resource "null_resource" "swarm_docker_create" {
 	}
 
 	provisioner "local-exec" {
-		command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/docker.yml"
+		command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/docker.yml"
 	}
 }
 
@@ -272,12 +272,12 @@ resource "null_resource" "ansible_beamup_users" {
 	}
 
 	provisioner "local-exec" {
-		command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=${var.username}' --extra-vars 'user_pubkey=${format("%s/%s", path.module, var.public_keys)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/users.yml"
+		command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=${var.username}' --extra-vars 'user_pubkey=${format("%s/%s", path.module, var.public_keys)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/users.yml"
 	}
 
 	# Configure a user for the monitoring
 	provisioner "local-exec" {
-		command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=icinga' --extra-vars 'user_pubkey=${format("%s/%s", path.module, var.public_keys)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/users.yml"
+		command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=icinga' --extra-vars 'user_pubkey=${format("%s/%s", path.module, var.public_keys)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/users.yml"
 	}
 
 	# XXX: ensire sudo does not ask for password
@@ -296,7 +296,7 @@ resource "null_resource" "ansible_configure_ssh" {
 	]
 
 	provisioner "local-exec" {
-		command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'sshd_config=${path.cwd}/ansible-files/sshd_config' --extra-vars 'banner=${path.module}/ansible-files/banner' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/sshd.yml"
+		command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'sshd_config=${path.cwd}/ansible/files/sshd_config' --extra-vars 'banner=${path.module}/ansible/files/banner' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/sshd.yml"
 	}
 }
 
@@ -310,7 +310,7 @@ resource "null_resource" "ansible_configure_cron" {
 	}
 
 	provisioner "local-exec" {
-		command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/cron.yml"
+		command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/cron.yml"
 	}
 }
 
@@ -324,12 +324,12 @@ resource "null_resource" "ansible_swarn_disable_swap" {
 	}
 
 	provisioner "local-exec" {
-		command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/disable-swap.yml"
+		command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/disable-swap.yml"
 	}
 }
 
 data "template_file" "ssh_tunnel_service" {
-	template = "${file("${path.cwd}/ansible-files/secure-tunnel-swarm.service.tpl")}"
+	template = "${file("${path.cwd}/ansible/files/secure-tunnel-swarm.service.tpl")}"
 
 	vars {
 		username = "${var.username}"
@@ -377,6 +377,6 @@ resource "null_resource" "hosts_firewall" {
 	}
 
 	provisioner "local-exec" {
-		command = "ansible-playbook -T 30 -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible-files/iptables.yml"
+		command = "ansible-playbook -T 30 -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/iptables.yml"
 	}
 }
