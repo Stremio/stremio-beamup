@@ -51,5 +51,12 @@
         chain: INPUT
         policy: DROP
 
+    - name: Allow ICMP echo/ping
+      iptables:
+        chain: INPUT
+        protocol: icmp
+        jump: ACCEPT
+        comment: Accept ICMP echo/pings
+
     - name: save iptables
       shell: 'iptables-save > /etc/iptables/rules.v4'
