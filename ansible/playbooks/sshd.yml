@@ -25,16 +25,6 @@
         state: absent
         regexp: "{{ item }}"
       with_items:
-        - 'PermitRootLogin yes'
-        - 'PasswordAuthentication yes'
-    
-    - name: Double check that password and root login are disabled
-      lineinfile:
-        path: /etc/ssh/sshd_config
-        state: absent
-        regexp: "{{ item }}"
-      with_items:
-        - 'PermitRootLogin yes'
         - 'PasswordAuthentication yes'
     
     - name: reload sshd
