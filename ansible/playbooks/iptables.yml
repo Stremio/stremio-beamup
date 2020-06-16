@@ -36,7 +36,7 @@
         jump: ACCEPT
         comment: Accept new HTTPS connections
 
-    - name: Allow SSH tunels on port 5000
+    - name: Allow SSH tunnels on port 5000
       iptables:
         chain: INPUT
         protocol: tcp
@@ -46,10 +46,58 @@
         jump: ACCEPT
         comment: Allow SSH tunel connections on port 5000
 
+    - name: Allow SSH tunnels on port 5000
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        source_port: 5000
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Allow SSH tunel connections on port 5000
+
     - name: Set the policy for the INPUT chain to DROP
       iptables:
         chain: INPUT
         policy: DROP
+
+    - name: Allow Docker control
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 2377
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Accept new plain Docker connections
+
+    - name: Allow Docker
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 7946
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Accept new Docker connections
+
+    - name: Allow Docker ports
+      iptables:
+        chain: INPUT
+        protocol: udp
+        destination_port: 7946
+        ctstate: NEW
+        jump: ACCEPT
+        comment: Accept new Docker connections
+
+    - name: Allow Docker ports
+      iptables:
+        chain: INPUT
+        protocol: udp
+        destination_port: 4789
+        ctstate: NEW
+        jump: ACCEPT
+        comment: Accept new Docker ports connections
 
     - name: Allow ICMP echo/ping
       iptables:
