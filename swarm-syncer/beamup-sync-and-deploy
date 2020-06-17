@@ -26,6 +26,7 @@ services:
         volumes:
           - /var/run/docker.sock:/tmp/docker.sock:ro
 EOF
+docker stack rm beamup_control
 docker stack deploy --compose-file registry.yaml beamup_control
 
 beamup-sync-swarm apps.yaml apps.conf
