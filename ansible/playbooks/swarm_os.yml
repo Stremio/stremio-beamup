@@ -1,0 +1,26 @@
+- hosts: swarm
+  tasks:
+    - name: Disable IPv6 [1/2]
+      sysctl:
+        name: net.ipv6.conf.all.disable_ipv6 
+        value: 1
+        state: present
+
+    - name: Disable IPv6 [2/2]
+      sysctl:
+        name: net.ipv6.conf.default.disable_ipv6
+        value: 1
+        state: present
+
+    - name: Disable swapinness
+      sysctl:
+        name: vm.swappiness
+        value: 0
+        state: present
+
+    - name: Disable overcommit memory
+      sysctl:
+        name: vm.overcommit_memory
+        value: 1
+        state: present
+        reload: yes

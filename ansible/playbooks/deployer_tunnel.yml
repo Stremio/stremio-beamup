@@ -1,0 +1,65 @@
+- hosts: deployer
+  tasks:
+    - name: Upload deployer SSH key for user dokku
+      copy:
+        src: ../../id_ed25519_deployer
+        dest: /home/dokku/.ssh/id_ed25519
+        mode: 0600
+        owner: dokku
+        group: dokku
+
+
+    - name: Upload deployer SSH key for user {{ username }}
+      copy:
+        src: ../../id_ed25519_deployer
+        dest: '/home/{{ username }}/.ssh/id_ed25519'
+        mode: 0600
+        owner: '{{ username }}'
+        group: '{{ username }}'
+
+    - name: Discover SSH keys [1/6]
+      shell: 'ssh-keyscan -T 10 {{ swarm_0_ip }} >> /root/.ssh/known_hosts'
+
+    - name: Discover SSH keys [2/6]
+      shell: 'ssh-keyscan -T 10 {{ swarm_1_ip }} >> /root/.ssh/known_hosts'
+
+    - name: Discover SSH keys [3/6]
+      shell: 'ssh-keyscan -T 10 {{ swarm_0_ip }} >> /home/{{ username }}/.ssh/known_hosts'
+
+    - name: Discover SSH keys [4/6]
+      shell: 'ssh-keyscan -T 10 {{ swarm_1_ip }} >> /home/{{ username }}/.ssh/known_hosts'
+
+    - name: Discover SSH keys [5/6]
+      shell: 'ssh-keyscan -T 10 {{ swarm_0_name }} >> /home/dokku/.ssh/known_hosts'
+
+    - name: Discover SSH keys [6/6]
+      shell: 'ssh-keyscan -T 10 {{ swarm_1_name }} >> /home/dokku/.ssh/known_hosts'
+
+    - name: Fix file permissions [1/2]
+      file:
+        path: '/home/{{ username }}/.ssh/known_hosts'
+        owner: '{{ username }}'
+        group: '{{ username }}'
+
+    - name: Fix file permissions [2/2]
+      file:
+        path: '/home/dokku/.ssh/known_hosts'
+        owner: dokku
+        group: dokku
+
+    - name: Copy the secure tunnnel service file
+      copy:
+        src: ../../secure-tunnel-swarm.service
+        dest: /etc/systemd/system/secure-tunnel.service
+
+    - name: Copy the secure tunnnel service file
+      copy:
+        src: ../../secure-tunnel-swarm.service
+        dest: /etc/systemd/system/secure-tunnel.service
+
+    - name: Start the secure tunnnel service file
+      systemd:
+        name: secure-tunnel.service
+        enabled: yes
+        masked: no
+        state: started
