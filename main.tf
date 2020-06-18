@@ -69,51 +69,14 @@ resource "null_resource" "deployer_setup" {
 	# Install packages
 	#
 	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m apt -a 'name=curl state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -m shell -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a 'curl -sL https://deb.nodesource.com/setup_12.x | bash - ' deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m apt -a 'name=nodejs state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m apt -a 'name=vim state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
+		command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/deployer_apt.yml"
 	}
 
 	#
-	# Run setup script
+	# Run setup
 	#
 	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m copy -a 'src=scripts/beamup-setup-deployer dest=/usr/local/bin/ mode=0700' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m shell -a 'DOMAIN=${var.domain} /usr/local/bin/beamup-setup-deployer' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	#
-	# Enable the beamup dokku plugin
-	#
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m copy -a 'src=dokku-plugins/beamup-trigger-swarm-sync dest=/var/lib/dokku/plugins/available mode=0755' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m file -a 'src=/var/lib/dokku/plugins/available/beamup-trigger-swarm-sync dest=/var/lib/dokku/plugins/enabled/beamup-trigger-swarm-sync state=link' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	#
-	# Install the beamup scripts
-	#
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m copy -a 'src=scripts/beamup-entry dest=/usr/local/bin/ mode=0755' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m copy -a 'src=scripts/beamup-sync-keys dest=/usr/local/bin/ mode=0755' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
+		command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory --extra-vars 'domain=beamup.dev' ${path.cwd}/ansible/playbooks/deployer_setup.yml"
 	}
 }
 
@@ -171,47 +134,14 @@ resource "null_resource" "swarm_os_setup" {
 	# Fine tune some sysctl values
 	#
 	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m sysctl -a 'name=net.ipv6.conf.all.disable_ipv6 value=1 state=present' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
-	}
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m sysctl -a 'name=net.ipv6.conf.default.disable_ipv6 value=1 state=present' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
-	}
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m sysctl -a 'name=vm.swappiness value=0 state=present' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
-	}
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m sysctl -a 'name=vm.overcommit_memory value=1 state=present reload=yes' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+		command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/swarm_os.yml"
 	}
 
 	#
 	# Install packages
 	#
 	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m apt -a 'name=curl state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -m shell -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a 'curl -sL https://deb.nodesource.com/setup_12.x | bash - ' swarm"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m apt -a 'name=nodejs state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m apt -a 'name=nginx state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m apt -a 'name=vim state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m apt -a 'name=python-pip state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u root -m pip -a 'name=docker state=present' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+		command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/swarm_apt.yml"
 	}
 
 	#
@@ -367,11 +297,7 @@ resource "null_resource" "deployer_tunnel_setup" {
 	}
 
 	provisioner "local-exec" {
-		command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=id_ed25519_deployer dest=/home/dokku/.ssh/id_ed25519 mode=0600 owner=dokku group=dokku' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=id_ed25519_deployer dest=/home/${var.username}/.ssh/id_ed25519 mode=0600 owner=${var.username} group=${var.username}' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
+		command = "${format("cat <<\"EOF\" > \"%s\"\n%s\nEOF", "secure-tunnel-swarm.service", data.template_file.ssh_tunnel_service.rendered)}"
 	}
 
 	provisioner "local-exec" {
@@ -383,39 +309,7 @@ resource "null_resource" "deployer_tunnel_setup" {
 	}
 
 	provisioner "local-exec" {
-		command = "${format("cat <<\"EOF\" > \"%s\"\n%s\nEOF", "secure-tunnel-swarm.service", data.template_file.ssh_tunnel_service.rendered)}"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=secure-tunnel-swarm.service dest=/etc/systemd/system/secure-tunnel.service' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -b -u ${var.username} -m shell -a 'ssh-keyscan -T 10 ${cherryservers_server.swarm.0.primary_ip} >> /root/.ssh/known_hosts ' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -b -u ${var.username} -m shell -a 'ssh-keyscan -T 10 ${cherryservers_server.swarm.1.primary_ip} >> /root/.ssh/known_hosts ' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u ${var.username} -m shell -a 'ssh-keyscan -T 10 ${cherryservers_server.swarm.0.primary_ip} >> /home/${var.username}/.ssh/known_hosts ' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -u ${var.username} -m shell -a 'ssh-keyscan -T 10 ${cherryservers_server.swarm.1.primary_ip} >> /home/${var.username}/.ssh/known_hosts ' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -b -u ${var.username} -m shell -a 'ssh-keyscan -T 10 ${cherryservers_server.swarm.0.hostname} >> /home/dokku/.ssh/known_hosts ' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -b -u ${var.username} -m shell -a 'ssh-keyscan -T 10 ${cherryservers_server.swarm.1.hostname} >> /home/dokku/.ssh/known_hosts ' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
-	}
-
-	provisioner "local-exec" {
-		command = "ansible -T 30 -b -u ${var.username} -m systemd -a 'name=secure-tunnel.service enabled=yes masked=no state=started' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory deployer"
+		command = "ansible-playbook -T 30 -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory --extra-vars 'username=${var.username}' --extra-vars 'swarm_0_ip=${cherryservers_server.swarm.0.primary_ip}' --extra-vars 'swarm_1_ip=${cherryservers_server.swarm.1.primary_ip}' --extra-vars 'swarm_0_name=${cherryservers_server.swarm.0.hostname}' --extra-vars 'swarm_1_name=${cherryservers_server.swarm.1.hostname}' ./ansible/playbooks/deployer_tunnel.yml"
 	}
 }
 
