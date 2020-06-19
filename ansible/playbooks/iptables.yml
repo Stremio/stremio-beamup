@@ -36,7 +36,7 @@
         jump: ACCEPT
         comment: Accept new HTTPS connections
 
-    - name: Allow SSH tunnels on port 5000
+    - name: Allow SSH tunnels on port 5000 /destination port/
       iptables:
         chain: INPUT
         protocol: tcp
@@ -44,9 +44,9 @@
         ctstate: NEW
         syn: match
         jump: ACCEPT
-        comment: Allow SSH tunel connections on port 5000
+        comment: Allow SSH tunel connections on dst port 5000
 
-    - name: Allow SSH tunnels on port 5000
+    - name: Allow SSH tunnels on port 5000 /source port/
       iptables:
         chain: INPUT
         protocol: tcp
@@ -54,7 +54,7 @@
         ctstate: NEW
         syn: match
         jump: ACCEPT
-        comment: Allow SSH tunel connections on port 5000
+        comment: Allow SSH tunel connections on src port 5000
 
     - name: Set the policy for the INPUT chain to DROP
       iptables:
