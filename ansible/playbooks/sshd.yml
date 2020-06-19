@@ -19,14 +19,15 @@
     - name: Disable banner for icinga
       command: touch /home/icinga/.hushlogin
 
-    - name: Double check that password and root login are disabled
+    - name: Disable root login & password auth
       lineinfile:
         path: /etc/ssh/sshd_config
-        state: absent
+        state: present
         regexp: "{{ item }}"
+        line: "{{ item }}"
       with_items:
-        - 'PermitRootLogin yes'
-        - 'PasswordAuthentication yes'
+        - 'PermitRootLogin no'
+        - 'PasswordAuthentication no'
 
     - name: Double check that password and root login are disabled
       lineinfile:
@@ -35,7 +36,6 @@
         regexp: "{{ item }}"
       with_items:
         - 'PermitRootLogin yes'
-
         - 'PasswordAuthentication yes'
     
     - name: reload sshd
