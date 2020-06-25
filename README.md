@@ -41,6 +41,11 @@ Setting/getting environment variables is similar to the way Dokku does it, howev
 
 For example: `ssh dokku@deployer.beamup.dev config:set 768c7b2546f2/hello NODE_ENV=production`
 
+## Architecture decisions
+
+* Why Dokku: it supports both Heroku buildpacks and Docker images, and it's super easy to configure and use
+* Why we're using container ports rather than container IPs: so we can make use of the swarm routing for zero downtime
+
 ## FAQ
 
 ### Why Cherryservers?
