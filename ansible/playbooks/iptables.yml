@@ -1,0 +1,110 @@
+- hosts: all
+  tasks:
+    - name: Allow related and established connections
+      iptables:
+        chain: INPUT
+        ctstate: ESTABLISHED,RELATED
+        jump: ACCEPT
+    
+    - name: Allow ssh
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 22
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Accept new SSH connections
+
+    - name: Allow plain HTTP
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 80
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Accept new plain HTTP connections
+
+    - name: Allow HTTPS
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 443
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Accept new HTTPS connections
+
+    - name: Allow SSH tunnels on port 5000 /destination port/
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 5000
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Allow SSH tunel connections on dst port 5000
+
+    - name: Allow SSH tunnels on port 5000 /source port/
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        source_port: 5000
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Allow SSH tunel connections on src port 5000
+
+    - name: Set the policy for the INPUT chain to DROP
+      iptables:
+        chain: INPUT
+        policy: DROP
+
+    - name: Allow Docker control
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 2377
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Accept new plain Docker connections
+
+    - name: Allow Docker
+      iptables:
+        chain: INPUT
+        protocol: tcp
+        destination_port: 7946
+        ctstate: NEW
+        syn: match
+        jump: ACCEPT
+        comment: Accept new Docker connections
+
+    - name: Allow Docker ports
+      iptables:
+        chain: INPUT
+        protocol: udp
+        destination_port: 7946
+        ctstate: NEW
+        jump: ACCEPT
+        comment: Accept new Docker connections
+
+    - name: Allow Docker ports
+      iptables:
+        chain: INPUT
+        protocol: udp
+        destination_port: 4789
+        ctstate: NEW
+        jump: ACCEPT
+        comment: Accept new Docker ports connections
+
+    - name: Allow ICMP echo/ping
+      iptables:
+        chain: INPUT
+        protocol: icmp
+        jump: ACCEPT
+        comment: Accept ICMP echo/pings
+
+    - name: save iptables
+      shell: 'iptables-save > /etc/iptables/rules.v4'

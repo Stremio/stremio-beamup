@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
-# TODO: input?
-DOMAIN=beamup.dev
-
-apt install -y vim nodejs
+if [ -z $DOMAIN ] ; then
+	DOMAIN=beamup.dev
+fi
 
 wget https://raw.githubusercontent.com/dokku/dokku/v0.20.0/bootstrap.sh
 sudo DOKKU_TAG=v0.20.0 bash bootstrap.sh

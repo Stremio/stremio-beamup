@@ -1,0 +1,7 @@
+- name: Configure the cron docker unused resources prune task
+  hosts: swarm_0
+  roles:
+    - role: geerlingguy.swap
+      swap_file_state: absent
+
+

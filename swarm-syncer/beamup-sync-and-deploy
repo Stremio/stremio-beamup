@@ -26,7 +26,11 @@ services:
         volumes:
           - /var/run/docker.sock:/tmp/docker.sock:ro
 EOF
+docker stack rm beamup_control
 docker stack deploy --compose-file registry.yaml beamup_control
 
 beamup-sync-swarm apps.yaml apps.conf
-docker stack deploy --prune --compose-file apps.yaml beamup 
+APPS_COUNT=`cat apps.yaml | grep image | wc -l`
+if [ $APPS_COUNT -gt 0 ] ; then
+	docker stack deploy --prune --compose-file apps.yaml beamup
+fi

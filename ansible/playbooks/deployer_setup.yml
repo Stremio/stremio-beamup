@@ -1,0 +1,34 @@
+- hosts: deployer
+  tasks:
+    - name: Upload deployer script
+      copy:
+        src: ../../scripts/beamup-setup-deployer
+        dest: /usr/local/bin/
+        mode: 0700
+
+    - name: Run the deployer setup script
+      shell: 'DOMAIN={{ domain }} /usr/local/bin/beamup-setup-deployer'
+
+    - name: Copy the beamup dokku plugin
+      copy:
+        src: ../../dokku-plugins/beamup-trigger-swarm-sync
+        dest: /var/lib/dokku/plugins/available
+        mode: 0755
+
+    - name: Enable the beamup dokku plugin
+      file:
+        src: /var/lib/dokku/plugins/available/beamup-trigger-swarm-sync
+        dest: /var/lib/dokku/plugins/enabled/beamup-trigger-swarm-sync
+        state: link
+
+    - name: Install the beamup scripts [1/2]
+      copy:
+        src: ../../scripts/beamup-entry
+        dest: /usr/local/bin/
+        mode: 0755
+
+    - name: Install the beamup scripts [2/2]
+      copy:
+        src: ../../scripts/beamup-sync-keys
+        dest: /usr/local/bin/
+        mode: 0755

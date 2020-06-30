@@ -1,0 +1,44 @@
+- hosts: swarm
+  tasks:
+    - name: Install curl
+      apt:
+        name: curl
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Update nodejs package apt /modern version/
+      shell: 'curl -sL https://deb.nodesource.com/setup_12.x | bash - '
+
+    - name: Install nodejs
+      apt:
+        name: nodejs
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install vim
+      apt:
+        name: vim
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install python-pip
+      apt:
+        name: python-pip
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install docker
+      pip:
+        name: docker
+        state: present

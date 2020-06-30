@@ -1,0 +1,23 @@
+- name: Configure the cron docker unused resources prune task
+  hosts: all
+  roles:
+    - role: manala.cron
+      manala_cron_files:
+        - file: docker-prune
+          user: root
+          environment:
+            - PATH: /usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+          jobs:
+            - name: Prune docker resources
+              job: "docker system prune -f --all"
+              minute: 30
+              hour: 4
+        - file: docker-registry-prune
+          user: root
+          environment:
+            - PATH: /usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+          jobs:
+            - name: Prune docker registry resources
+              job: "ID=`docker ps -q -f name=beamup_control_registry` && echo Garbage collect ${ID} && docker exec -i ${ID} bin/registry garbage-collect /etc/docker/registry/config.yml -m"
+              minute: 30
+              hour: 5
