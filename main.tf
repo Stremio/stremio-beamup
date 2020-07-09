@@ -1,5 +1,5 @@
 provider "cherryservers" {
-    auth_token = "${trimspace(file("./creds/cherryservers"))}"
+    auth_token = trimspace(file("./creds/cherryservers"))
 }
 
 variable "private_key" {
@@ -37,17 +37,17 @@ variable "username" {
 
 resource "cherryservers_ssh" "tf_deploy_key" {
     name   = "tf_deploy_key_testing"
-    public_key = "${file("${var.private_key}.pub")}"
+    public_key = file("${var.private_key}.pub")
 }
 
 # The controller/deployer server
 resource "cherryservers_server" "deployer" {
-    project_id = "${trimspace(file("./creds/cherryservers-project-id"))}"
-    region = "${var.region}"
+    project_id = trimspace(file("./creds/cherryservers-project-id"))
+    region = var.region
     hostname = "stremio-addon-deployer"
-    image = "${var.image}"
-    plan_id = "${var.plan_id}"
-    ssh_keys_ids = ["${cherryservers_ssh.tf_deploy_key.id}"]
+    image = var.image
+    plan_id = var.plan_id
+    ssh_keys_ids = [ cherryservers_ssh.tf_deploy_key.id ]
     tags = {
         Name        = "deployer"
         Environment = "Stremio Beamup"
@@ -55,7 +55,7 @@ resource "cherryservers_server" "deployer" {
 }
 
 resource "null_resource" "deployer_setup" {
-    depends_on = [ "cherryservers_server.deployer" ]
+    depends_on = [ cherryservers_server.deployer ]
 
 	provisioner "local-exec" {
 		command = "echo 'Waiting for setup scripts to finish...' && sleep 60"
@@ -83,17 +83,17 @@ resource "null_resource" "deployer_setup" {
 # The swarm servers
 # TODO: add deployer in authorized-keys
 resource "cherryservers_server" "swarm" {
-    count = "${var.swarm_nodes}"
-    project_id = "${trimspace(file("./creds/cherryservers-project-id"))}"
-    region = "${var.region}"
+    count = var.swarm_nodes
+    project_id = trimspace(file("./creds/cherryservers-project-id"))
+    region = var.region
     hostname = "stremio-beamup-swarm-${count.index}"
-    image = "${var.image}"
+    image = var.image
     # ssd_smart16 is 94
     # E3-1240v3 is 86
     # E3-1240V5 is 113
     # E5-1650V2 is 106
     plan_id = "86"
-    ssh_keys_ids = ["${cherryservers_ssh.tf_deploy_key.id}"]
+    ssh_keys_ids = [ cherryservers_ssh.tf_deploy_key.id ]
     tags = {
         Name        = "swarm"
         Environment = "Stremio Beamup"
@@ -102,7 +102,7 @@ resource "cherryservers_server" "swarm" {
 
 
 resource "null_resource" "swarm_docker_create" {
-    depends_on = [ "cherryservers_server.swarm" ]
+    depends_on = [ cherryservers_server.swarm ]
 
 	provisioner "local-exec" {
 		command = "echo 'Waiting for setup scripts to finish...' && sleep 60"
@@ -118,9 +118,9 @@ resource "null_resource" "swarm_docker_create" {
 }
 
 resource "null_resource" "swarm_hosts" {
-    count = "${var.swarm_nodes}"
+    count = var.swarm_nodes
 
-    depends_on = [ "cherryservers_server.swarm" ]
+    depends_on = [ cherryservers_server.swarm ]
 
     provisioner "local-exec" {
         command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='127.0.1.1 stremio-beamup-swarm-${count.index}'\" swarm_${count.index}"
@@ -128,7 +128,7 @@ resource "null_resource" "swarm_hosts" {
 }
 
 resource "null_resource" "swarm_os_setup" {
-    depends_on = [ "null_resource.swarm_docker_create" ]
+    depends_on = [ null_resource.swarm_docker_create ]
 
 	#
 	# Fine tune some sysctl values
@@ -159,16 +159,16 @@ data "external" "swarm_tokens" {
 		private_key = "${var.private_key}"
 	}
 
-	depends_on = [ "null_resource.swarm_os_setup" ]
+	depends_on = [ null_resource.swarm_os_setup ]
 }
 
 resource "null_resource" "swarm_docker_join" {
-    depends_on = [ "null_resource.swarm_os_setup" , "data.external.swarm_tokens" ]
-    count = "${var.swarm_nodes - 1}"
+    depends_on = [ null_resource.swarm_os_setup , data.external.swarm_tokens ]
+    count = var.swarm_nodes - 1
 
 	connection {
-		private_key = "${file(var.private_key)}"
-		host = "${element(cherryservers_server.swarm.*.primary_ip, count.index + 1)}"
+		private_key = file(var.private_key)
+		host = element(cherryservers_server.swarm.*.primary_ip, count.index + 1)
 	}
 
 	provisioner "remote-exec" {
@@ -179,7 +179,7 @@ resource "null_resource" "swarm_docker_join" {
 }
 
 resource "null_resource" "swarm_docker_setup" {
-    depends_on = [ "null_resource.swarm_docker_join", "null_resource.swarm_hosts" ]
+    depends_on = [ null_resource.swarm_docker_join, null_resource.swarm_hosts ]
 
 
 	#
@@ -199,7 +199,7 @@ resource "null_resource" "swarm_docker_setup" {
 }
 
 resource "null_resource" "ansible_beamup_users" {
-    depends_on = [ "null_resource.swarm_docker_setup", "null_resource.deployer_setup" ]
+    depends_on = [ null_resource.swarm_docker_setup, null_resource.deployer_setup ]
 
 	provisioner "local-exec" {
 		command = "ansible-galaxy install -f juju4.adduser"
@@ -225,7 +225,7 @@ resource "null_resource" "ansible_beamup_users" {
 #
 resource "null_resource" "ansible_configure_ssh" {
 	depends_on = [
-		"null_resource.ansible_beamup_users",
+		null_resource.ansible_beamup_users,
 	]
 
 	provisioner "local-exec" {
@@ -247,7 +247,7 @@ resource "null_resource" "ansible_configure_ssh" {
 
 resource "null_resource" "ansible_configure_cron" {
 	depends_on = [
-		"null_resource.ansible_configure_ssh",
+		null_resource.ansible_configure_ssh,
 	]
 
 	provisioner "local-exec" {
@@ -261,7 +261,7 @@ resource "null_resource" "ansible_configure_cron" {
 
 resource "null_resource" "ansible_swarn_disable_swap" {
 	depends_on = [
-		"null_resource.ansible_configure_ssh",
+		 null_resource.ansible_configure_ssh,
 	]
 
 	provisioner "local-exec" {
@@ -276,23 +276,23 @@ resource "null_resource" "ansible_swarn_disable_swap" {
 data "template_file" "ssh_tunnel_service" {
 	template = "${file("${path.cwd}/ansible/files/secure-tunnel-swarm.service.tpl")}"
 
-	depends_on = [ "cherryservers_server.swarm" ]
+	depends_on = [ cherryservers_server.swarm ]
 
-	vars {
+	vars = {
 		username = "${var.username}"
 		target = "${cherryservers_server.swarm.1.primary_ip}"
 	}
 }
 
 resource "null_resource" "deployer_tunnel_setup" {
-	depends_on = [ "data.template_file.ssh_tunnel_service", "null_resource.ansible_swarn_disable_swap" ]
+	depends_on = [ data.template_file.ssh_tunnel_service, null_resource.ansible_swarn_disable_swap ]
 
 	provisioner "local-exec" {
 		command = "rm -f id_ed25519_deployer && rm -f id_ed25519_deployer.pub && ssh-keygen -t ed25519 -f id_ed25519_deployer -C 'dokku@stremio-addon-deployer' -q -N ''"
 	}
 
 	provisioner "local-exec" {
-		command = "${format("cat <<\"EOF\" > \"%s\"\n%s\nEOF", "secure-tunnel-swarm.service", data.template_file.ssh_tunnel_service.rendered)}"
+		command = format("cat <<\"EOF\" > \"%s\"\n%s\nEOF", "secure-tunnel-swarm.service", data.template_file.ssh_tunnel_service.rendered)
 	}
 
 	provisioner "local-exec" {
@@ -311,9 +311,9 @@ resource "null_resource" "deployer_tunnel_setup" {
 data "template_file" "beamup_sync_swarm" {
 	template = "${file("${path.cwd}/ansible/files/beamup-sync-swarm.sh.tpl")}"
 
-	depends_on = [ "cherryservers_server.swarm" ]
+	depends_on = [ cherryservers_server.swarm ]
 
-	vars {
+	vars = {
 		cloudflare_token = "${trimspace(file("./creds/cloudflare_token"))}"
 		cloudflare_zone_id = "${trimspace(file("./creds/cloudflare_zone_id"))}"
 		cf_origin_ips = "${cherryservers_server.swarm.0.primary_ip}"
@@ -321,10 +321,10 @@ data "template_file" "beamup_sync_swarm" {
 }
 
 resource "null_resource" "swarm_deployer_script" {
-    depends_on = [ "null_resource.deployer_tunnel_setup", "data.template_file.beamup_sync_swarm" ]
+    depends_on = [ null_resource.deployer_tunnel_setup, data.template_file.beamup_sync_swarm ]
 
 	provisioner "local-exec" {
-		command = "${format("cat <<\"EOF\" > \"%s\"\n%s\nEOF", "beamup-sync-swarm.sh", data.template_file.beamup_sync_swarm.rendered)}"
+		command = format("cat <<\"EOF\" > \"%s\"\n%s\nEOF", "beamup-sync-swarm.sh", data.template_file.beamup_sync_swarm.rendered)
 	}
 
 	provisioner "local-exec" {
@@ -332,7 +332,7 @@ resource "null_resource" "swarm_deployer_script" {
 	}
 
 	provisioner "local-exec" {
-		command = "${format("ansible -T 30 -u ${var.username} -m shell -a 'echo \"command=\\\"/home/beamup/beamup-sync-swarm.sh\\\",restrict %s\" >> /home/beamup/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm", file("./id_ed25519_deployer.pub"))}"
+		command = format("ansible -T 30 -u ${var.username} -m shell -a 'echo \"command=\\\"/home/beamup/beamup-sync-swarm.sh\\\",restrict %s\" >> /home/beamup/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm", file("./id_ed25519_deployer.pub"))
 	}
 
 	provisioner "local-exec" {
@@ -343,7 +343,7 @@ resource "null_resource" "swarm_deployer_script" {
 }
 
 resource "null_resource" "hosts_firewall" {
-	depends_on = [ "null_resource.deployer_tunnel_setup", "null_resource.swarm_deployer_script" ]
+	depends_on = [ null_resource.deployer_tunnel_setup, null_resource.swarm_deployer_script ]
 
 	provisioner "local-exec" {
 		command = "ansible -T 30 -b -u ${var.username} -m apt -a 'name=iptables-persistent state=present update_cache=yes' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory all"
