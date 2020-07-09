@@ -1,3 +1,7 @@
+terraform {
+  required_version = ">= 0.12"
+}
+
 provider "cherryservers" {
     auth_token = trimspace(file("./creds/cherryservers"))
 }
