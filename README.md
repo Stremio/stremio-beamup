@@ -8,9 +8,9 @@ It is based on [Dokku](https://github.com/dokku/dokku), but with two significant
 
 To deploy this yourself, you'll need:
 
-* A Cherryservers account and API key
-* Terraform
-* Ansible
+* A [Cherryservers account](https://portal.cherryservers.com/#/register) and API key
+* [Terraform](https://www.terraform.io/downloads.html) - version 0.12 or later
+* [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html)
 * Go & [Terraform inventory](https://github.com/adammck/terraform-inventory)
 
 ## Deployment
