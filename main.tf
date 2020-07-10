@@ -11,7 +11,7 @@ variable "private_key" {
 }
 
 variable "public_keys" {
-  default = "./authorized_keys"
+  default = "authorized_keys"
 }
 
 variable "region" {
@@ -163,7 +163,11 @@ data "external" "swarm_tokens" {
     private_key = "${var.private_key}"
   }
 
-  depends_on = [null_resource.swarm_os_setup]
+  depends_on = [ null_resource.swarm_os_setup ]
+}
+
+data "external" "workdir" {
+  program = ["${path.cwd}/scripts/fetch-workdir.sh"]
 }
 
 resource "null_resource" "swarm_docker_join" {
@@ -214,12 +218,12 @@ resource "null_resource" "ansible_beamup_users" {
   }
 
   provisioner "local-exec" {
-    command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=${var.username}' --extra-vars 'user_pubkey=${format("%s/%s", path.module, var.public_keys)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/users.yml"
+    command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=${var.username}' --extra-vars 'user_pubkey=${format("%s/%s", data.external.workdir.result.workdir, var.public_keys)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/users.yml"
   }
 
   # Configure a user for the monitoring
   provisioner "local-exec" {
-    command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=icinga' --extra-vars 'user_pubkey=${format("%s/%s", path.module, var.public_keys)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/users.yml"
+    command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=icinga' --extra-vars 'user_pubkey=${format("%s/%s", data.external.workdir.result.workdir, var.public_keys)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/users.yml"
   }
 
   # XXX: ensire sudo does not ask for password
@@ -250,7 +254,7 @@ resource "null_resource" "ansible_configure_ssh" {
   }
 
   provisioner "local-exec" {
-    command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'sshd_config=${path.cwd}/ansible/files/sshd_config' --extra-vars 'banner=${path.module}/ansible/files/banner' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/sshd.yml"
+    command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'sshd_config=${path.cwd}/ansible/files/sshd_config' --extra-vars 'banner=${format("%s/ansible/files/banner", data.external.workdir.result.workdir)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/sshd.yml"
   }
 }
 

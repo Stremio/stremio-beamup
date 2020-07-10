@@ -1,4 +1,3 @@
-#!/usr/local/bin/bash
 #!/usr/bin/env bash
 
 # Processing JSON in shell scripts
