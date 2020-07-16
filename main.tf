@@ -67,6 +67,10 @@ resource "null_resource" "deployer_setup" {
 
   provisioner "local-exec" {
     command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='127.0.1.1 stremio-addon-deployer'\" deployer"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   #
@@ -74,6 +78,10 @@ resource "null_resource" "deployer_setup" {
   #
   provisioner "local-exec" {
     command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/deployer_apt.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   #
@@ -81,6 +89,10 @@ resource "null_resource" "deployer_setup" {
   #
   provisioner "local-exec" {
     command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory --extra-vars 'domain=beamup.dev' ${path.cwd}/ansible/playbooks/deployer_setup.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 }
 
@@ -118,6 +130,10 @@ resource "null_resource" "swarm_docker_create" {
 
   provisioner "local-exec" {
     command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/docker.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 }
 
@@ -128,6 +144,10 @@ resource "null_resource" "swarm_hosts" {
 
   provisioner "local-exec" {
     command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='127.0.1.1 stremio-beamup-swarm-${count.index}'\" swarm_${count.index}"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 }
 
@@ -139,6 +159,10 @@ resource "null_resource" "swarm_os_setup" {
   #
   provisioner "local-exec" {
     command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/swarm_os.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   #
@@ -146,12 +170,20 @@ resource "null_resource" "swarm_os_setup" {
   #
   provisioner "local-exec" {
     command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/swarm_apt.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   #
   # Init the swarm on the first server
   provisioner "local-exec" {
     command = "ansible -T 30 -u root -m docker_swarm -a 'state=present' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 }
 
@@ -163,7 +195,7 @@ data "external" "swarm_tokens" {
     private_key = "${var.private_key}"
   }
 
-  depends_on = [ null_resource.swarm_os_setup ]
+  depends_on = [null_resource.swarm_os_setup]
 }
 
 data "external" "workdir" {
@@ -195,14 +227,26 @@ resource "null_resource" "swarm_docker_setup" {
   #
   provisioner "local-exec" {
     command = "ansible -T 30 -u root -m copy -a 'src=swarm-syncer/beamup-sync-and-deploy dest=/usr/local/bin/ mode=0755' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   provisioner "local-exec" {
     command = "ansible -T 30 -u root -m copy -a 'src=swarm-syncer/beamup-sync-swarm dest=/usr/local/bin/ mode=0755' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   provisioner "local-exec" {
     command = "ansible -T 30 -u root -m shell -a '/usr/local/bin/beamup-sync-and-deploy' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 }
 
@@ -215,20 +259,36 @@ resource "null_resource" "ansible_beamup_users" {
 
   provisioner "local-exec" {
     command = "ansible -T 30 -u root -m apt -a 'name=sudo state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   provisioner "local-exec" {
     command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=${var.username}' --extra-vars 'user_pubkey=${format("%s/%s", data.external.workdir.result.workdir, var.public_keys)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/users.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   # Configure a user for the monitoring
   provisioner "local-exec" {
     command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=icinga' --extra-vars 'user_pubkey=${format("%s/%s", data.external.workdir.result.workdir, var.public_keys)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/users.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   # XXX: ensire sudo does not ask for password
   provisioner "local-exec" {
     command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/sudoers regexp='^(.*)%sudo(.*)' line='%sudo ALL=(ALL:ALL) NOPASSWD:ALL'\" all"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 }
 
@@ -243,18 +303,34 @@ resource "null_resource" "ansible_configure_ssh" {
 
   provisioner "local-exec" {
     command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='${cherryservers_server.swarm.0.primary_ip} ${cherryservers_server.swarm.0.hostname}'\" all"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   provisioner "local-exec" {
     command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='${cherryservers_server.swarm.1.primary_ip} ${cherryservers_server.swarm.1.hostname}'\" all"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   provisioner "local-exec" {
     command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='${cherryservers_server.deployer.primary_ip} ${cherryservers_server.deployer.hostname}'\" all"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   provisioner "local-exec" {
     command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'sshd_config=${path.cwd}/ansible/files/sshd_config' --extra-vars 'banner=${format("%s/ansible/files/banner", data.external.workdir.result.workdir)}' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/sshd.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 }
 
@@ -269,6 +345,10 @@ resource "null_resource" "ansible_configure_cron" {
 
   provisioner "local-exec" {
     command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/cron.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 }
 
@@ -283,6 +363,10 @@ resource "null_resource" "ansible_swarn_disable_swap" {
 
   provisioner "local-exec" {
     command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/disable-swap.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 }
 
@@ -310,14 +394,26 @@ resource "null_resource" "deployer_tunnel_setup" {
 
   provisioner "local-exec" {
     command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=id_ed25519_deployer.pub dest=/home/${var.username}/.ssh/ mode=0600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_1"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   provisioner "local-exec" {
     command = "ansible -T 30 -b -u ${var.username} -m shell -a 'echo -n command=\"beamup-sync-and-deploy\",restrict,permitopen=\"localhost:5000\" && cat /home/${var.username}/.ssh/id_ed25519_deployer.pub >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_1"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   provisioner "local-exec" {
     command = "ansible-playbook -T 30 -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory --extra-vars 'username=${var.username}' --extra-vars 'swarm_0_ip=${cherryservers_server.swarm.0.primary_ip}' --extra-vars 'swarm_1_ip=${cherryservers_server.swarm.1.primary_ip}' --extra-vars 'swarm_0_name=${cherryservers_server.swarm.0.hostname}' --extra-vars 'swarm_1_name=${cherryservers_server.swarm.1.hostname}' ./ansible/playbooks/deployer_tunnel.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 }
 
@@ -342,14 +438,26 @@ resource "null_resource" "swarm_deployer_script" {
 
   provisioner "local-exec" {
     command = "ansible -T 30 -u ${var.username} -m copy -a 'src=beamup-sync-swarm.sh dest=/home/beamup/beamup-sync-swarm.sh mode=0755' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   provisioner "local-exec" {
     command = format("ansible -T 30 -u ${var.username} -m shell -a 'echo \"command=\\\"/home/beamup/beamup-sync-swarm.sh\\\",restrict %s\" >> /home/beamup/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm", file("./id_ed25519_deployer.pub"))
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   provisioner "local-exec" {
     command = "ansible -m lineinfile -b -u ${var.username} --ssh-extra-args='-o StrictHostKeyChecking=no' -a \"dest=/etc/sudoers regexp='^(.*)beamup(.*)' line='beamup ALL=(ALL) NOPASSWD: /bin/systemctl restart nginx'\" --inventory-file=$GOPATH/bin/terraform-inventory swarm"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
 
@@ -360,9 +468,17 @@ resource "null_resource" "hosts_firewall" {
 
   provisioner "local-exec" {
     command = "ansible -T 30 -b -u ${var.username} -m apt -a 'name=iptables-persistent state=present update_cache=yes' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory all"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 
   provisioner "local-exec" {
     command = "ansible-playbook -T 30 -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory ${path.cwd}/ansible/playbooks/iptables.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
   }
 }
