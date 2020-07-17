@@ -41,7 +41,7 @@ fi
 
 if [ "$2" = "add-remote" ]
 then
-	GITHUB_USERNAME=$3
+	GITHUB_USERNAME=`echo $3 | awk '{print tolower($0)}'`
 	if [ -z $3 ] || [ -z $4 ]; then
 		echo "Usage: beamup <host> add-remote <github username> <app name>"
 		exit 1
