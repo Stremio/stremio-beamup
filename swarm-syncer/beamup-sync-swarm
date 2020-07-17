@@ -30,7 +30,6 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
               window: 1h
         environment:
           - PORT=${port}
-        command: /start web
         ports:
           - '${port}:${port}'`
 
