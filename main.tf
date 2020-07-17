@@ -27,7 +27,7 @@ variable "domain" {
 }
 
 variable "swarm_nodes" {
-  default = "2"
+  default = "1"
 }
 
 # corresponds to ssd_smart16
@@ -204,7 +204,7 @@ data "external" "workdir" {
 
 resource "null_resource" "swarm_docker_join" {
   depends_on = [null_resource.swarm_os_setup, data.external.swarm_tokens]
-  count      = var.swarm_nodes - 1
+  count      =  1
 
   connection {
     private_key = file(var.private_key)
@@ -213,7 +213,7 @@ resource "null_resource" "swarm_docker_join" {
 
   provisioner "remote-exec" {
     inline = [
-      "${format("docker swarm join --token %s %s:2377", data.external.swarm_tokens.result.manager, cherryservers_server.swarm.0.primary_ip)}"
+      "${var.swarm_nodes - 1 > 0 ? format("docker swarm join --token %s %s:2377", data.external.swarm_tokens.result.manager, cherryservers_server.swarm.0.primary_ip) : "echo skipping..."}"
     ]
   }
 }
@@ -310,7 +310,7 @@ resource "null_resource" "ansible_configure_ssh" {
   }
 
   provisioner "local-exec" {
-    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='${cherryservers_server.swarm.1.primary_ip} ${cherryservers_server.swarm.1.hostname}'\" all"
+    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='${cherryservers_server.swarm.0.primary_ip} ${cherryservers_server.swarm.0.hostname}'\" all"
 
     environment = {
       TF_STATE = "./"
@@ -377,7 +377,7 @@ data "template_file" "ssh_tunnel_service" {
 
   vars = {
     username = "${var.username}"
-    target   = "${cherryservers_server.swarm.1.primary_ip}"
+    target   = "${cherryservers_server.swarm.0.primary_ip}"
   }
 }
 
@@ -393,7 +393,7 @@ resource "null_resource" "deployer_tunnel_setup" {
   }
 
   provisioner "local-exec" {
-    command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=id_ed25519_deployer.pub dest=/home/${var.username}/.ssh/ mode=0600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_1"
+    command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=id_ed25519_deployer.pub dest=/home/${var.username}/.ssh/ mode=0600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
 
     environment = {
       TF_STATE = "./"
@@ -401,7 +401,7 @@ resource "null_resource" "deployer_tunnel_setup" {
   }
 
   provisioner "local-exec" {
-    command = "ansible -T 30 -b -u ${var.username} -m shell -a 'echo -n command=\"beamup-sync-and-deploy\",restrict,permitopen=\"localhost:5000\" && cat /home/${var.username}/.ssh/id_ed25519_deployer.pub >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_1"
+    command = "ansible -T 30 -b -u ${var.username} -m shell -a 'echo -n command=\"beamup-sync-and-deploy\",restrict,permitopen=\"localhost:5000\" && cat /home/${var.username}/.ssh/id_ed25519_deployer.pub >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
 
     environment = {
       TF_STATE = "./"
@@ -409,7 +409,7 @@ resource "null_resource" "deployer_tunnel_setup" {
   }
 
   provisioner "local-exec" {
-    command = "ansible-playbook -T 30 -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory --extra-vars 'username=${var.username}' --extra-vars 'swarm_0_ip=${cherryservers_server.swarm.0.primary_ip}' --extra-vars 'swarm_1_ip=${cherryservers_server.swarm.1.primary_ip}' --extra-vars 'swarm_0_name=${cherryservers_server.swarm.0.hostname}' --extra-vars 'swarm_1_name=${cherryservers_server.swarm.1.hostname}' ./ansible/playbooks/deployer_tunnel.yml"
+    command = "ansible-playbook -T 30 -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory --extra-vars 'username=${var.username}' --extra-vars 'swarm_0_ip=${cherryservers_server.swarm.0.primary_ip}' --extra-vars 'swarm_1_ip=${element(cherryservers_server.swarm.*.primary_ip, 1)}' --extra-vars 'swarm_0_name=${cherryservers_server.swarm.0.hostname}' --extra-vars 'swarm_1_name=${element(cherryservers_server.swarm.*.hostname, 1)}' ./ansible/playbooks/deployer_tunnel.yml"
 
     environment = {
       TF_STATE = "./"
