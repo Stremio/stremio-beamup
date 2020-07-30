@@ -88,7 +88,7 @@ resource "null_resource" "deployer_setup" {
   # Run setup
   #
   provisioner "local-exec" {
-    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory --extra-vars 'domain=beamup.dev' ${path.cwd}/ansible/playbooks/deployer_setup.yml"
+    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory --extra-vars 'domain=${var.domain}' ${path.cwd}/ansible/playbooks/deployer_setup.yml"
 
     environment = {
       TF_STATE = "./"
