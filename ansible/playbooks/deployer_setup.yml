@@ -32,3 +32,11 @@
         src: ../../scripts/beamup-sync-keys
         dest: /usr/local/bin/
         mode: 0755
+
+    - name: Upload deployer SSH swarm key for user dokku
+      copy:
+        src: ../../id_ed25519_deployer_sync
+        dest: /home/dokku/.ssh/id_ed25519_sync
+        mode: 0600
+        owner: dokku
+        group: dokku

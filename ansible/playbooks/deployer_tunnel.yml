@@ -1,17 +1,17 @@
 - hosts: deployer
   tasks:
-    - name: Upload deployer SSH key for user dokku
+    - name: Upload deployer SSH tunnel key for user dokku
       copy:
-        src: ../../id_ed25519_deployer
+        src: ../../id_ed25519_deployer_tunnel
         dest: /home/dokku/.ssh/id_ed25519
         mode: 0600
         owner: dokku
         group: dokku
 
 
-    - name: Upload deployer SSH key for user {{ username }}
+    - name: Upload deployer SSH tunnel key for user {{ username }}
       copy:
-        src: ../../id_ed25519_deployer
+        src: ../../id_ed25519_deployer_tunnel
         dest: '/home/{{ username }}/.ssh/id_ed25519'
         mode: 0600
         owner: '{{ username }}'
