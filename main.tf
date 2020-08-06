@@ -73,6 +73,14 @@ resource "null_resource" "deployer_setup" {
     }
   }
 
+  provisioner "local-exec" {
+    command = "ansible -m hostname -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"name=stremio-addon-deployer\" deployer"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+
   #
   # Install packages
   #
@@ -82,6 +90,13 @@ resource "null_resource" "deployer_setup" {
     environment = {
       TF_STATE = "./"
     }
+  }
+
+  #
+  # Prepare SSH key for swarm sync
+  #
+  provisioner "local-exec" {
+    command = "rm -f id_ed25519_deployer_sync && rm -f id_ed25519_deployer_sync.pub && ssh-keygen -t ed25519 -f id_ed25519_deployer_sync -C 'dokku@stremio-addon-deployer' -q -N ''"
   }
 
   #
@@ -141,6 +156,14 @@ resource "null_resource" "swarm_hosts" {
   count = var.swarm_nodes
 
   depends_on = [cherryservers_server.swarm]
+
+  provisioner "local-exec" {
+    command = "ansible -m hostname -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"name=stremio-beamup-swarm-${count.index}\" swarm_${count.index}"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
 
   provisioner "local-exec" {
     command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/hosts line='127.0.1.1 stremio-beamup-swarm-${count.index}'\" swarm_${count.index}"
@@ -204,7 +227,7 @@ data "external" "workdir" {
 
 resource "null_resource" "swarm_docker_join" {
   depends_on = [null_resource.swarm_os_setup, data.external.swarm_tokens]
-  count      =  1
+  count      = 1
 
   connection {
     private_key = file(var.private_key)
@@ -385,7 +408,7 @@ resource "null_resource" "deployer_tunnel_setup" {
   depends_on = [data.template_file.ssh_tunnel_service, null_resource.ansible_swarn_disable_swap]
 
   provisioner "local-exec" {
-    command = "rm -f id_ed25519_deployer && rm -f id_ed25519_deployer.pub && ssh-keygen -t ed25519 -f id_ed25519_deployer -C 'dokku@stremio-addon-deployer' -q -N ''"
+    command = "rm -f id_ed25519_deployer_tunnel && rm -f id_ed25519_deployer_tunnel.pub && ssh-keygen -t ed25519 -f id_ed25519_deployer_tunnel -C 'dokku@stremio-addon-deployer' -q -N ''"
   }
 
   provisioner "local-exec" {
@@ -393,7 +416,7 @@ resource "null_resource" "deployer_tunnel_setup" {
   }
 
   provisioner "local-exec" {
-    command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=id_ed25519_deployer.pub dest=/home/${var.username}/.ssh/ mode=0600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
+    command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=id_ed25519_deployer_tunnel.pub dest=/home/${var.username}/.ssh/ mode=0600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
 
     environment = {
       TF_STATE = "./"
@@ -401,7 +424,7 @@ resource "null_resource" "deployer_tunnel_setup" {
   }
 
   provisioner "local-exec" {
-    command = "ansible -T 30 -b -u ${var.username} -m shell -a 'echo -n command=\"beamup-sync-and-deploy\",restrict,permitopen=\"localhost:5000\" && cat /home/${var.username}/.ssh/id_ed25519_deployer.pub >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
+    command = "ansible -T 30 -b -u ${var.username} -m shell -a 'echo -n command=\"beamup-sync-and-deploy\",restrict,permitopen=\"localhost:5000\" && cat /home/${var.username}/.ssh/id_ed25519_deployer_tunnel.pub >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
 
     environment = {
       TF_STATE = "./"
@@ -437,7 +460,7 @@ resource "null_resource" "swarm_deployer_script" {
   }
 
   provisioner "local-exec" {
-    command = "ansible -T 30 -u ${var.username} -m copy -a 'src=beamup-sync-swarm.sh dest=/home/beamup/beamup-sync-swarm.sh mode=0755' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
+    command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=id_ed25519_deployer_sync.pub dest=/home/${var.username}/.ssh/ mode=0600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
 
     environment = {
       TF_STATE = "./"
@@ -445,7 +468,15 @@ resource "null_resource" "swarm_deployer_script" {
   }
 
   provisioner "local-exec" {
-    command = format("ansible -T 30 -u ${var.username} -m shell -a 'echo \"command=\\\"/home/beamup/beamup-sync-swarm.sh\\\",restrict %s\" >> /home/beamup/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm", file("./id_ed25519_deployer.pub"))
+    command = "ansible -T 30 -u ${var.username} -m copy -a 'src=beamup-sync-swarm.sh dest=/home/${var.username}/beamup-sync-swarm.sh mode=0755' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+
+  provisioner "local-exec" {
+    command = format("ansible -T 30 -u ${var.username} -m shell -a 'echo \"command=\\\"/home/beamup/beamup-sync-swarm.sh\\\",restrict %s\" >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm", file("./id_ed25519_deployer_sync.pub"))
 
     environment = {
       TF_STATE = "./"
@@ -459,8 +490,6 @@ resource "null_resource" "swarm_deployer_script" {
       TF_STATE = "./"
     }
   }
-
-
 }
 
 resource "null_resource" "hosts_firewall" {

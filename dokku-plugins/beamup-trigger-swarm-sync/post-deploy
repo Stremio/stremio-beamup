@@ -10,4 +10,4 @@ docker tag dokku/$APP:latest localhost:5000/dokku/$APP:latest
 docker push localhost:5000/dokku/$APP:latest >/dev/null
 # trigger swarm sync
 # TODO -q
-ssh -T beamup@stremio-beamup-swarm-0
+ssh -T -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0
