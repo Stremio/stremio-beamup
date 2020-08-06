@@ -384,6 +384,20 @@ resource "null_resource" "ansible_swarm_disable_swap" {
   }
 }
 
+resource "null_resource" "ansible_swarm_setup_nginx" {
+  depends_on = [
+    null_resource.ansible_configure_ssh,
+  ]
+
+  provisioner "local-exec" {
+    command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory --extra-vars 'username=${var.username}' ./ansible/playbooks/swarm_nginx.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+}
+
 data "template_file" "ssh_tunnel_service" {
   template = "${file("${path.cwd}/ansible/files/secure-tunnel-swarm.service.tpl")}"
 

@@ -1,0 +1,29 @@
+- hosts: swarm
+  tasks:
+    - name: Ensure at least an empty apps.conf file exists
+      file:
+        path: '/home/{{ username }}/apps.conf'
+        state: touch
+        mode: '0644'
+        owner: '{{ username }}'
+        group: '{{ username }}'
+
+    - name: Create the nginx config symlink
+      file:
+        src: '/home/{{ username }}/apps.conf'
+        dest: /etc/nginx/conf.d/apps.conf
+        state: link
+        owner: '{{ username }}'
+        group: '{{ username }}'
+
+    - name: Make sure the nginx service is enabled
+      systemd:
+        name: nginx
+        enabled: yes
+        masked: no
+
+    - name: Restart nginx
+      systemd:
+        name: nginx
+        daemon_reload: yes
+        state: reloaded
