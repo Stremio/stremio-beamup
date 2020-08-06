@@ -37,6 +37,7 @@ Prerequisites and good to know:
 * Also, when you run `git push beamup master`, you'll see the deployment log and the URL at which you can access your addon
 * Your addon repo must suppport one of the Heroku buildpacks or must have a `Dockerfile`; with Nodejs, simply having a `package.json` in the repo should be sufficient
 * It's based on Dokku, so whatever you can deploy there you can also deploy on Beamup (it's using the same build system); however, some features are not supported such as custom NGINX config
+* Currently only apps using Dokku 'Herokuish' buildpack are supported. An ugly workaround to deploy an addon/application built with Dokku 'Dockerfile' buildpack is to include 'docker' in the application name.
 
 ### Setting environment variables
 Setting/getting environment variables is similar to the way Dokku does it, however you do it through ssh, and you need to pass the same addon slug that's used in the git remote that `./cli/beamup` adds.
