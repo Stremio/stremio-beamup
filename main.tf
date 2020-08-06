@@ -366,7 +366,7 @@ resource "null_resource" "ansible_configure_cron" {
   }
 }
 
-resource "null_resource" "ansible_swarn_disable_swap" {
+resource "null_resource" "ansible_swarm_disable_swap" {
   depends_on = [
     null_resource.ansible_configure_ssh,
   ]
@@ -396,7 +396,7 @@ data "template_file" "ssh_tunnel_service" {
 }
 
 resource "null_resource" "deployer_tunnel_setup" {
-  depends_on = [data.template_file.ssh_tunnel_service, null_resource.ansible_swarn_disable_swap]
+  depends_on = [data.template_file.ssh_tunnel_service, null_resource.ansible_swarm_disable_swap]
 
   provisioner "local-exec" {
     command = "rm -f id_ed25519_deployer_tunnel && rm -f id_ed25519_deployer_tunnel.pub && ssh-keygen -t ed25519 -f id_ed25519_deployer_tunnel -C 'dokku@stremio-addon-deployer' -q -N ''"
