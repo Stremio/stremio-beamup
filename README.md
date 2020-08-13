@@ -22,10 +22,13 @@ To deploy this yourself, you'll need:
 2. Register on [Cherryservers](cherryservers.com) and fund your account
 3. Create an API key and paste it into a new file: `creds/cherryservers`; paste your numeric project ID into `creds/cherryservers-project-id`
 4. Start an ssh-agent & load the key from step 1 into the agent - `ssh-add id_deploy`
-5. Run `terraform apply`
+5. Create an ['authorized_keys'](https://www.ssh.com/ssh/authorized_keys/) containing the public keys of users who should access the deployment.
+6. Run `touch id_ed25519_deployer_sync.pub` to workaround a TF0.12 issue
+7. Run `terraform apply`
 
 By default, this will bootstrap a single server called `deployer` that can be used to deploy addons too and a docker swarm with two nodes where the addons will be deployed.
 
+**CAVEAT:** Depending on the Cherryservers node setup, the first ansible playbook execution might fail with `"E: Could not get lock /var/lib/dpkg/lock - open (11: Resource temporarily unavailable"` error. This is due to server setup scripts on the Cherryservers, simply restart the `terraform apply` command.
 
 ## Deploying an addon
 
