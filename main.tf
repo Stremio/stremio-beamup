@@ -308,7 +308,7 @@ resource "null_resource" "ansible_beamup_users" {
 
 
 #
-# After creating this resource, root access via SSH is forbidden; login as user 'beamup' instead
+# After creating this resource, root access via SSH is forbidden; login as user 'beamup'/the configured default user instead
 #
 resource "null_resource" "ansible_configure_ssh" {
   depends_on = [
