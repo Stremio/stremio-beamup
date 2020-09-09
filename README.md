@@ -19,7 +19,7 @@ To deploy this yourself, you'll need:
 
 
 1. Run `ssh-keygen -t ed25519 -f id_deploy`
-2. Register on [Cherryservers](cherryservers.com) and fund your account
+2. Register on [Cherryservers](https://cherryservers.com) and fund your account
 3. Create an API key and paste it into a new file: `creds/cherryservers`; paste your numeric project ID into `creds/cherryservers-project-id`
 4. Start an ssh-agent & load the key from step 1 into the agent - `ssh-add id_deploy`
 5. Create an ['authorized_keys'](https://www.ssh.com/ssh/authorized_keys/) containing the public keys of users who should access the deployment.

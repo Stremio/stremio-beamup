@@ -296,7 +296,7 @@ resource "null_resource" "ansible_beamup_users" {
     }
   }
 
-  # XXX: ensire sudo does not ask for password
+  # XXX: ensure sudo does not ask for password
   provisioner "local-exec" {
     command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory -a \"dest=/etc/sudoers regexp='^(.*)%sudo(.*)' line='%sudo ALL=(ALL:ALL) NOPASSWD:ALL'\" all"
 
