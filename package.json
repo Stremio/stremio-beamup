@@ -1,0 +1,6 @@
+{
+  "name": "beamup",
+  "version": "0.0.1",
+  "bin": "./cli/beamup",
+  "os" : [ "!win32" ]
+}
