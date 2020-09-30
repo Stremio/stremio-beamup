@@ -34,6 +34,7 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
         ports:
           - '${port}:${port}'
 `
+
 const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
         image: ${image}
         deploy:
@@ -132,7 +133,7 @@ async function getConfigs() {
 	if (apps.length > TOTAL_APP_LIMIT) throw new Error('app limit exceeded')
 	const swarmHerokuishCfgs = apps.filter(app => !app.name.includes('docker')).map(app => APP_TMPL(app.name, app.fullImageName, app.port))
 	const swarmDockerfileCfgs = apps.filter(app => app.name.includes('docker')).map(app => APP_DOCKER_TMPL(app.name, app.fullImageName, app.port))
-	const swarmCfgs = swarmHerokuishCfgs + swarmDockerfileCfgs
+	const swarmCfgs = swarmHerokuishCfgs.concat(swarmDockerfileCfgs)
 	const nginxCfgs = apps.map(app => APP_NGINX_TMPL(app.name, app.port))
 	return {
 		swarm: [HEADER].concat(swarmCfgs).join('\n'),
