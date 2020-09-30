@@ -21,7 +21,7 @@ service dokku-installer stop
 service dokku-installer disable
 
 # Add the control key to the dokku user - this key allows to run beamup-entry in a way that only permits syncing GitHub keys
-echo 'command="beamup-entry $SSH_ORIGINAL_COMMAND",restrict ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAILuOA9TOeOLyPJgA1eQ/0zMqqQczz2yiOnqyjOEjaXkn Control Key' >> /home/dokku/.ssh/authorized_keys
+echo 'command="beamup-entry $SSH_ORIGINAL_COMMAND",restrict ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC3H/3VUVzcGgsEqMdJS0VyDy0Kkwz5zyx5zxKYTlkSWXDIxx5lytUg0LnH0jP5MhI0p+t61cUH0f7dUTbsWpCVbAiz1ISXYbMD7v+BCEwKspBjdtjRZ8HHIV7hMChSqtm7jreclmliAgUPaaXNp7lvn1wwKjKOV5kuzTvkOfqL6PKRmWk9AcjO3oaW4ajAQOOnYiNsq8i0KJnVYk1HZhmgyXuL91nZCLZcNIt8R3tOWk2mBuTklvIMqFGfBf6ukCntEGU2lZbNEZXUNRSIVHNnVbKyhK4fDK2zLEoHLg3Fbm0rnFLBu36+kZCmW/4ypR46U0xOD8SsdxzA8lzuu9Eb Control Key' >> /home/dokku/.ssh/authorized_keys
 
 # Install the Dokku registry plugin, allowing each deploy to push to a registry
 # dokku plugin:install https://github.com/dokku/dokku-registry.git registry
