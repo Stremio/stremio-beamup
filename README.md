@@ -32,15 +32,7 @@ By default, this will bootstrap a single server called `deployer` that can be us
 
 ## Deploying an addon
 
-To deploy an addon, you first need to have your SSH key added to your GitHub account; then, `cd` into the directory of your addon, and do `./cli/beamup <beamup deployer hostname> add-remote <github username> <addon name>`; then, `git push beamup master`
-
-Prerequisites and good to know:
-* Works on UNIX-like operating systems (Linux, macOS) but it should also work on Windows in Git Bash or the Linux subsystem
-* You can use `git push beamup master` to update your addons as well
-* Also, when you run `git push beamup master`, you'll see the deployment log and the URL at which you can access your addon
-* Your addon repo must suppport one of the Heroku buildpacks or must have a `Dockerfile`; with Nodejs, simply having a `package.json` in the repo should be sufficient
-* It's based on Dokku, so whatever you can deploy there you can also deploy on Beamup (it's using the same build system); however, some features are not supported such as custom NGINX config
-* Currently only apps using Dokku 'Herokuish' buildpack are supported. An ugly workaround to deploy an addon/application built with Dokku 'Dockerfile' buildpack is to include 'docker' in the application name.
+Use [beamup-cli](https://github.com/Stremio/streamio-beamup-cli) to deploy addons.
 
 ### Setting environment variables
 Setting/getting environment variables is similar to the way Dokku does it, however you do it through ssh, and you need to pass the same addon slug that's used in the git remote that `./cli/beamup` adds.
