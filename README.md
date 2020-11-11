@@ -42,7 +42,7 @@ For example: `ssh dokku@deployer.beamup.dev config:set 768c7b2546f2/hello NODE_E
 ### Addon application logs
 Logs of deployed addons can easily be fetched in way, similar to the way Dokku does it, however through ssh
 
-For example: `ssh dokku@eployer.beamup.dev logs 768c7b2546f2/hello`
+For example: `ssh dokku@deployer.beamup.dev logs 768c7b2546f2/hello`
 
 ## Architecture decisions
 
