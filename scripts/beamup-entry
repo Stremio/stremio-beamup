@@ -22,7 +22,7 @@ then
 	exit 1
 fi
 
-if [ "$1" = "git-receive-pack" ] || [ "$1" = "config:set" ] || [ "$1" = "config:get" ];
+if [ "$1" = "git-receive-pack" ] || [ "$1" = "config:set" ] || [ "$1" = "config:get" ] || [ "$1" = "logs" ];
 then
 	# NOTE: this is safe because GitHub usernames cannot have `-` in them
 	APP_NAME="$(echo $2 | tr '/' '-' | tr -d '"' | tr -d \')"

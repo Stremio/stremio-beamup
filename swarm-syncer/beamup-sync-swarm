@@ -94,7 +94,12 @@ server {
 
 async function getJSON(http, opts) {
 	const res = await request(http, opts)
-	if (res.statusCode !== 200) throw new Error(`returned status ${res.statusCode}`)
+	if (res.statusCode !== 200) {
+		if (opts.hostname != 'api.cloudflare.com') {
+			console.log(opts)
+			throw new Error(`returned status ${res.statusCode}`)
+		}
+	}
 	res.setEncoding('utf8')
 	return new Promise((resolve, reject) => {
 		let body = ''

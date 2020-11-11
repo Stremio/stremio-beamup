@@ -39,6 +39,11 @@ Setting/getting environment variables is similar to the way Dokku does it, howev
 
 For example: `ssh dokku@deployer.beamup.dev config:set 768c7b2546f2/hello NODE_ENV=production`
 
+### Addon application logs
+Logs of deployed addons can easily be fetched in way, similar to the way Dokku does it, however through ssh
+
+For example: `ssh dokku@eployer.beamup.dev logs 768c7b2546f2/hello`
+
 ## Architecture decisions
 
 * Why Dokku: it supports both Heroku buildpacks and Docker images, and it's super easy to configure and use
