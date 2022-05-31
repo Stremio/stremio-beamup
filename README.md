@@ -1,5 +1,5 @@
 # stremio-beamup
-🛠️ A platform as a service (PaaS) hosting for Stremio addons: as easy a Heroku/Now.sh, but DYI and without the restrictions.
+🛠️ A platform as a service (PaaS) hosting for Stremio addons: as easy a Heroku/Now.sh, but DIY and without the restrictions.
 
 It is based on [Dokku](https://github.com/dokku/dokku), but with two significant differences:
 * It's designed with public use in mind - you can authenticate yourself using your GitHub account and push addons
