@@ -111,7 +111,7 @@ async function getJSON(http, opts) {
 }
 
 async function getImages() {
-	return await getJSON(http, `${REGISTRY_URL}/v2/_catalog`)
+	return await getJSON(http, `${REGISTRY_URL}/v2/_catalog?n=${TOTAL_APP_LIMIT}`)
 }
 
 async function getPortMapping() {
