@@ -1,5 +1,13 @@
 terraform {
   required_version = ">= 0.12"
+
+  required_providers {
+    cherryservers = {
+      source  = "terraform.local/local/cherryservers"
+      version = "1.0.0"
+    }
+  }
+
 }
 
 provider "cherryservers" {
@@ -15,33 +23,46 @@ variable "public_keys" {
 }
 
 variable "region" {
-  default = "EU-East-1"
+  default = "EU-Nord-1"
 }
 
 variable "image" {
-  default = "Debian 9 64bit"
+  default = "Debian 10 64bit"
 }
 
+#domain for production is ***REMOVED***
 variable "domain" {
-  default = "beamup.dev"
+  default = "***REMOVED***"
 }
 
 variable "swarm_nodes" {
   default = "1"
 }
 
-# corresponds to ssd_smart16
+# 719 corresponds to Cloud VDS 4
 variable "plan_id" {
-  default = "94"
+  default = "719"
 }
 
 variable "username" {
   default = "beamup"
 }
 
+## Execute a local command to log the public_key value
+#resource "null_resource" "log_public_key" {
+#  triggers = {
+#    always_run = "${timestamp()}"
+#  }
+#
+#  provisioner "local-exec" {
+#    command = "echo ${file("${var.private_key}.pub")}"
+#  }
+#}
+
 resource "cherryservers_ssh" "tf_deploy_key" {
   name       = "tf_deploy_key_testing"
-  public_key = file("${var.private_key}.pub")
+#https://github.com/hashicorp/terraform/issues/7531
+  public_key = "${replace(file("${var.private_key}.pub"), "\n", "")}"
 }
 
 # The controller/deployer server
@@ -202,12 +223,13 @@ resource "null_resource" "swarm_os_setup" {
   #
   # Init the swarm on the first server
   provisioner "local-exec" {
-    command = "ansible -T 30 -u root -m docker_swarm -a 'state=present' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
+    command = "ansible -T 30 -u root -m community.docker.docker_swarm -a 'state=present' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
 
     environment = {
       TF_STATE = "./"
     }
   }
+
 }
 
 data "external" "swarm_tokens" {
@@ -219,6 +241,7 @@ data "external" "swarm_tokens" {
   }
 
   depends_on = [null_resource.swarm_os_setup]
+
 }
 
 data "external" "workdir" {
