@@ -1,6 +1,16 @@
 # Beamup
 creds/*
 id_deploy*
+authorized_keys
+beamup-sync-swarm.sh
+id_ed25519_deployer_sync*
+id_ed25519_deployer_tunnel*
+secure-tunnel-swarm.service
+backups
+
+# Terraform Dependency Lock File
+# https://developer.hashicorp.com/terraform/language/files/dependency-lock
+.terraform.lock.hcl
 
 # Local .terraform directories
 **/.terraform/*
