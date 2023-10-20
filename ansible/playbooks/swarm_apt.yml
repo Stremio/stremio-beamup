@@ -17,6 +17,15 @@
         update_cache: yes
         cache_valid_time: 3600
 
+    - name: file | Configure appropiate symbolic links for nodejs
+      file:
+        src: "{{ item.source }}"
+        dest: "{{ item.dest }}"
+        state: link
+      loop:
+        - { source: "/usr/bin/node", dest: "/etc/alternatives/nodejs" }
+        - { source: "/etc/alternatives/nodejs", dest: "/usr/bin/nodejs" }
+
     - name: Install vim
       apt:
         name: vim
