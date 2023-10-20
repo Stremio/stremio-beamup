@@ -40,8 +40,10 @@ variable "swarm_nodes" {
 }
 
 # 719 corresponds to Cloud VDS 4
+# 86 corresponds to E3-1240V3
+# Virtual Servers no longer have Debian 10 and that is needed for Dokku v0.20
 variable "plan_id" {
-  default = "719"
+  default = "86"
 }
 
 variable "username" {
@@ -223,7 +225,7 @@ resource "null_resource" "swarm_os_setup" {
   #
   # Init the swarm on the first server
   provisioner "local-exec" {
-    command = "ansible -T 30 -u root -m community.docker.docker_swarm -a 'state=present' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
+    command = "ansible -T 30 -u root -m community.docker.docker_swarm -a 'state=present subnet_size=16' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
 
     environment = {
       TF_STATE = "./"

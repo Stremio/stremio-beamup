@@ -52,6 +52,16 @@ const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
           - '${port}:${port}'
 `
 
+// https://github.com/docker-archive/for-aws/issues/104
+// Creating network of /16 because of above issue
+const networkCfg = `networks:
+  default:
+    driver: overlay
+    ipam:
+      config:
+        - subnet: 10.2.0.0/16
+`
+
 const APP_NGINX_TMPL = (appName, port) => `proxy_cache_path /var/lib/nginx/cache_${appName} levels=1:2 keys_zone=${appName}_cache:10m max_size=1g inactive=600m use_temp_path=off;
 upstream ${appName} {
         server 127.0.0.1:${port};
@@ -138,7 +148,7 @@ async function getConfigs() {
 	if (apps.length > TOTAL_APP_LIMIT) throw new Error('app limit exceeded')
 	const swarmHerokuishCfgs = apps.filter(app => !app.name.includes('docker')).map(app => APP_TMPL(app.name, app.fullImageName, app.port))
 	const swarmDockerfileCfgs = apps.filter(app => app.name.includes('docker')).map(app => APP_DOCKER_TMPL(app.name, app.fullImageName, app.port))
-	const swarmCfgs = swarmHerokuishCfgs.concat(swarmDockerfileCfgs)
+	const swarmCfgs = swarmHerokuishCfgs.concat(swarmDockerfileCfgs,networkCfg)
 	const nginxCfgs = apps.map(app => APP_NGINX_TMPL(app.name, app.port))
 	return {
 		swarm: [HEADER].concat(swarmCfgs).join('\n'),
