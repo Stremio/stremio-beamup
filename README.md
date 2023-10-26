@@ -19,7 +19,11 @@ To deploy this yourself, you'll need:
 
 **WARNING:** this only refers to deploying stremio-beamup itself, not deploying addons to it
 
-
+0. **Setup CherryServers Providers for Terraform**  
+Since the CherryServers provider is not being actively updated, it is not available on the Terraform Registry. You'll need to install it manually by following these steps:
+    1. **Download CherryServers Provider**: Navigate to the [CherryServers Download Page](http://downloads.cherryservers.com/other/terraform/) and download the file named `terraform-provider-cherryservers`.
+    2. **Place the File**: Move the downloaded `terraform-provider-cherryservers` file to the following directory structure (this is for Linux users):  
+    `~/.terraform.d/plugins/terraform.local/local/cherryservers/1.0.0/linux_amd64/`
 1. Run `ssh-keygen -t ed25519 -f id_deploy`.
 2. Register on [Cherryservers](https://cherryservers.com), fund your account and create a project.
 3. Create an API key and paste it into a new file: `creds/cherryservers`; paste your numeric project ID into `creds/cherryservers-project-id`.
