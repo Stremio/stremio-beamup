@@ -10,6 +10,9 @@ terraform {
 
 }
 
+
+# Variables
+
 provider "cherryservers" {
   auth_token = trimspace(file("./creds/cherryservers"))
 }
@@ -30,25 +33,41 @@ variable "image" {
   default = "Debian 10 64bit"
 }
 
-#domain for production is ***REMOVED***
 variable "domain" {
-  default = "***REMOVED***"
+  default = "beamup.dev"
 }
 
 variable "swarm_nodes" {
-  default = "1"
+  default = 1
 }
 
-# 719 corresponds to Cloud VDS 4
-# 86 corresponds to E3-1240V3
-# Virtual Servers no longer have Debian 10 and that is needed for Dokku v0.20
-variable "plan_id" {
+# About plans
+# Smart Servers are not supported anymore, like id 94 for ssd_smart16
+# Virtual Servers no longer have Debian 10 and that is needed for Dokku v0.20.
+# @TODO Update Dokku so new versions of Debian can be used and VDS from CherryServers too
+# Working plans are Dedicated Servers like:
+# E3-1240v3 is 86
+# E3-1240V5 is 113
+# E5-1650V2 is 106 
+variable "deployer_plan_id" {
   default = "86"
+}
+
+variable "swarm_plan_id" {
+  default = "113"
 }
 
 variable "username" {
   default = "beamup"
 }
+
+variable "deployment_environment" {
+  description = "The environment this infrastructure should be associated with, like stating, development, etc."
+  type        = string
+  default     = "production"
+}
+
+# Resources
 
 ## Execute a local command to log the public_key value
 #resource "null_resource" "log_public_key" {
@@ -73,11 +92,12 @@ resource "cherryservers_server" "deployer" {
   region       = var.region
   hostname     = "stremio-addon-deployer"
   image        = var.image
-  plan_id      = var.plan_id
+  plan_id      = var.deployer_plan_id
   ssh_keys_ids = [cherryservers_ssh.tf_deploy_key.id]
   tags = {
-    Name        = "deployer"
-    Environment = "Stremio Beamup"
+    Name        = "stremio-addon-deployer"
+    Project     = "beamup"
+    Environment = var.deployment_environment
   }
 }
 
@@ -142,15 +162,12 @@ resource "cherryservers_server" "swarm" {
   region     = var.region
   hostname   = "stremio-beamup-swarm-${count.index}"
   image      = var.image
-  # ssd_smart16 is 94
-  # E3-1240v3 is 86
-  # E3-1240V5 is 113
-  # E5-1650V2 is 106
-  plan_id      = "86"
+  plan_id      = var.swarm_plan_id
   ssh_keys_ids = [cherryservers_ssh.tf_deploy_key.id]
   tags = {
-    Name        = "swarm"
-    Environment = "Stremio Beamup"
+    Name        = "stremio-beamup-swarm-${count.index}"
+    Project     = "beamup"
+    Environment = var.deployment_environment
   }
 }
 
