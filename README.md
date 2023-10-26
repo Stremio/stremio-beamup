@@ -26,11 +26,15 @@ To deploy this yourself, you'll need:
 4. Start an ssh-agent e.g. ``eval `ssh-agent` `` & load the key from step 1 into the agent - `ssh-add id_deploy`.
 5. Create an ['authorized_keys'](https://www.ssh.com/ssh/authorized_keys/) containing the public keys of users who should access the deployment.
 6. Run `touch id_ed25519_deployer_sync.pub` to workaround a TF0.12 issue.
-7. Register a domain for the service
+7. Register a domain.  
 This can be done in CloudFlare too in the next step, or it can be registered from any domain provider like NameCheap, GoDaddy, etc.
-8. Create an account on [CloudFlare](https://www.cloudflare.com); follow the steps to add a site/zone (to add the domain) and add the Zone ID in `creds/cloudflare_zone_id`; create an API Token with DNS:Edit permission for the zone created and add it to `creds/cloudflare_token`.
-9. Create a DNS A Record for the deployer public IP, e.g.: deployer.thebestbeamup.com.
-This DNS can be used with `beamup-cli` to deploy the addons. It can be created in CloudFlare.
+8. Setup CloudFlare
+    1. Create an account on [CloudFlare](https://www.cloudflare.com).
+    2. Follow the on-screen instructions to add your domain (also known as a 'zone' or 'site').
+    3. Once the zone is added, locate and note down the Zone ID. Add this to a `cloudflare_zone_id` file in the `creds/` directory.
+    4. Create an API Token within CloudFlare with the permission of DNS:Edit for the zone you just created. Save this token to a `cloudflare_token` file in the `creds/` directory.
+9. Create a DNS A Record for the deployer's public IP, e.g.: `deployer.thebestbeamup.com`.  
+It can be created in CloudFlare. This DNS can be used with `beamup-cli` to deploy the addons.
 10. Run `terraform apply`.
 
 By default, this will bootstrap a single server called `deployer` that can be used to deploy addons too and a docker swarm with two nodes where the addons will be deployed.
