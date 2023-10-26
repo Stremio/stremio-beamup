@@ -12,8 +12,8 @@ To deploy this yourself, you'll need:
 * [Terraform](https://www.terraform.io/downloads.html) - tested with version 1.6.2
 * [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) - tested with ansible community package 7.2
 * Go & [Terraform inventory](https://github.com/adammck/terraform-inventory)
-* A domain name from any domain provider.
-* A [CloudFlare account](https://www.cloudflare.com/) and API key
+* A domain name
+* A [CloudFlare account](https://www.cloudflare.com/) and API token
 
 ## Deployment
 
@@ -26,7 +26,8 @@ To deploy this yourself, you'll need:
 4. Start an ssh-agent e.g. ``eval `ssh-agent` `` & load the key from step 1 into the agent - `ssh-add id_deploy`.
 5. Create an ['authorized_keys'](https://www.ssh.com/ssh/authorized_keys/) containing the public keys of users who should access the deployment.
 6. Run `touch id_ed25519_deployer_sync.pub` to workaround a TF0.12 issue.
-7. Register a domain for the service (it can be done in CloudFlare too, in the next step).
+7. Register a domain for the service
+This can be done in CloudFlare too in the next step, or it can be registered from any domain provider like NameCheap, GoDaddy, etc.
 8. Create an account on [CloudFlare](https://www.cloudflare.com); follow the steps to add a site/zone (to add the domain) and add the Zone ID in `creds/cloudflare_zone_id`; create an API Token with DNS:Edit permission for the zone created and add it to `creds/cloudflare_token`.
 9. Create a DNS A Record for the deployer public IP, e.g.: deployer.thebestbeamup.com.
 This DNS can be used with `beamup-cli` to deploy the addons. It can be created in CloudFlare.
