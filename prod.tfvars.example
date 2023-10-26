@@ -1,5 +1,5 @@
 # dev.tfvars
-env = "production"
+deployment_environment = "production"
 domain  = "***REMOVED***"
 swarm_nodes = "1"
 deployer_plan_id = "86" # E3-1240V3 is 86
