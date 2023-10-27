@@ -37,8 +37,7 @@ This can be done in CloudFlare too in the next step, or it can be registered fro
     2. Follow the on-screen instructions to add your domain (also known as a 'zone' or 'site').
     3. Once the zone is added, locate and note down the Zone ID. Add this to a `cloudflare_zone_id` file in the `creds/` directory.
     4. Create an API Token within CloudFlare with the permission of DNS:Edit for the zone you just created. Save this token to a `cloudflare_token` file in the `creds/` directory.
-9. Create a DNS A Record for the deployer's public IP, e.g.: `deployer.beamup.dev`.  
-It can be created in CloudFlare. This DNS can be used with `beamup-cli` to deploy the addons.
+
 10. Initialize Terraform and apply configurations:
     - Run the Terraform initialization command:
       ```bash
@@ -51,6 +50,8 @@ It can be created in CloudFlare. This DNS can be used with `beamup-cli` to deplo
       terraform apply -var-file=prod.tfvars
       ```
     Make sure to copy and edit the `.tfvars` files from their corresponding `.tfvars.example` if you haven't done so. Fill in the necessary information for your specific environment (either `development`, `production` or other).  
+9. Create a DNS A Record for the deployer's public IP, e.g.: `deployer.beamup.dev`.  
+It can be created in CloudFlare. This DNS can be used with `beamup-cli` to deploy the addons.
 
 By default, this will bootstrap a single server called `deployer` that can be used to deploy addons too and a docker swarm with two nodes where the addons will be deployed.
 
