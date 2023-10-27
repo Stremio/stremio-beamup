@@ -81,7 +81,7 @@ variable "deployment_environment" {
 #}
 
 resource "cherryservers_ssh" "tf_deploy_key" {
-  name       = "tf_deploy_key_testing"
+  name       = "tf_deploy_key_${var.deployment_environment}"
 #https://github.com/hashicorp/terraform/issues/7531
   public_key = "${replace(file("${var.private_key}.pub"), "\n", "")}"
 }
