@@ -20,9 +20,12 @@ zone_info=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID"
 zone_name=$(echo $zone_info | jq -r '.result.name')
 
 # List DNS Records
-response=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+# Check there is a max with the per_page parameter
+response=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records?per_page=500" \
      -H "Authorization: Bearer $API_TOKEN" \
      -H "Content-Type: application/json")
+#To debug response
+#echo $response
 
 # Extract and display Record IDs, Names, and IPs with jq tool
 echo "Records to be deleted in zone $zone_name:"
