@@ -88,7 +88,7 @@ resource "cherryservers_ssh" "tf_deploy_key" {
 
 # The controller/deployer server
 resource "cherryservers_server" "deployer" {
-  project_id   = trimspace(file("./creds/cherryservers-project-id"))
+  project_id   = trimspace(file("./creds/cherryservers_project_id"))
   region       = var.region
   hostname     = "stremio-addon-deployer"
   image        = var.image
@@ -158,7 +158,7 @@ resource "null_resource" "deployer_setup" {
 # TODO: add deployer in authorized-keys
 resource "cherryservers_server" "swarm" {
   count      = var.swarm_nodes
-  project_id = trimspace(file("./creds/cherryservers-project-id"))
+  project_id = trimspace(file("./creds/cherryservers_project_id"))
   region     = var.region
   hostname   = "stremio-beamup-swarm-${count.index}"
   image      = var.image
