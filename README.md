@@ -19,7 +19,7 @@ To deploy this yourself, you'll need:
 
 **WARNING:** this only refers to deploying stremio-beamup itself, not deploying addons to it
 
-1. Run `ssh-keygen -t ed25519 -f id_deploy` or `ssh-keygen -t ed25519 -f id_deploy -C "your_custom_comment"`.
+1. Run `ssh-keygen -t ed25519 -f id_deploy` or `ssh-keygen -t ed25519 -f id_deploy -C "tf_deploy_key"`.
 2. Register on [Cherryservers](https://cherryservers.com), fund your account and create a project.
 3. Create an API key and paste it into a new file: `creds/cherryservers`; paste your numeric project ID into `creds/cherryservers-project-id`.
 4. Start an ssh-agent e.g. ``eval `ssh-agent` `` & load the key from step 1 into the agent - `ssh-add id_deploy`.
