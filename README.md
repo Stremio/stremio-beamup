@@ -21,7 +21,7 @@ To deploy this yourself, you'll need:
 
 1. Run `ssh-keygen -t ed25519 -f id_deploy` or `ssh-keygen -t ed25519 -f id_deploy -C "tf_deploy_key"`.
 2. Register on [Cherryservers](https://cherryservers.com), fund your account and create a project.
-3. Create an API key and paste it into a new file: `creds/cherryservers`; paste your numeric project ID into `creds/cherryservers_project_id`.
+3. Paste your numeric project ID into `creds/cherryservers_project_id`; create an API key and paste it into a new file: `creds/cherryservers`.
 4. Start an ssh-agent e.g. ``eval `ssh-agent` `` & load the key from step 1 into the agent - `ssh-add id_deploy`.
 5. Create an ['authorized_keys'](https://www.ssh.com/ssh/authorized_keys/) containing the public keys of users who should access the deployment, including the public SSH Key generated in previous step.
 6. Run `touch id_ed25519_deployer_sync.pub` to workaround a TF0.12 issue.
