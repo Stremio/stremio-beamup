@@ -33,7 +33,7 @@ This can be done in CloudFlare too in the next step, or it can be registered fro
     3. Once the zone is added, locate and note down the Zone ID. Add this to a `cloudflare_zone_id` file in the `creds/` directory.
     4. Create an API Token within CloudFlare with the permission of DNS:Edit for the zone you just created. Save this token to a `cloudflare_token` file in the `creds/` directory.
 
-10. Initialize Terraform and apply configurations:
+10. Setup Terraform and apply configurations:
     - Setup CherryServers Providers for Terraform  
 Since the [CherryServers provider](https://github.com/hashicorp/terraform-provider-cherryservers) is not being actively updated, it is not available on the Terraform Registry. You'll need to install it manually by following these steps:
         - **Download CherryServers Provider**: Navigate to the [CherryServers Download Page](http://downloads.cherryservers.com/other/terraform/) and download the file named `terraform-provider-cherryservers`.

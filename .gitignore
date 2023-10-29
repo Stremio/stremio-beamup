@@ -12,6 +12,11 @@ backups
 # https://developer.hashicorp.com/terraform/language/files/dependency-lock
 #.terraform.lock.hcl
 
+# Logs
+terraform.log
+*.log
+logs/*
+
 # Local .terraform directories
 **/.terraform/*
 
