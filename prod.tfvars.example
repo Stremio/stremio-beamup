@@ -1,6 +1,6 @@
 # dev.tfvars
 deployment_environment = "production"
-domain  = "***REMOVED***"
+domain  = "beamup.com"
 swarm_nodes = "1"
 deployer_plan_id = "86" # E3-1240V3 is 86
 swarm_plan_id = "113" # E3-1240V5 is 113

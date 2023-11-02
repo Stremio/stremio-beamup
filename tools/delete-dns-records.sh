@@ -8,8 +8,8 @@ if [ "$#" -ne 1 ]; then
 fi
 
 # VARS
-API_TOKEN=$(cat creds/cloudflare_token) # Token that has permission over ***REMOVED***
-ZONE_ID=$(cat creds/cloudflare_zone_id) #***REMOVED*** Zone ID
+API_TOKEN=$(cat creds/cloudflare_token) # Token that has DNS permissions over Zone
+ZONE_ID=$(cat creds/cloudflare_zone_id) # Zone ID
 TARGET_IP_ADDRESS=$1  # Use the first argument as the target IP address
 
 # Get Zone Name
