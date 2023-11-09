@@ -17,6 +17,15 @@
         update_cache: yes
         cache_valid_time: 3600
 
+    - name: file | Configure appropiate symbolic links for nodejs
+      file:
+        src: "{{ item.source }}"
+        dest: "{{ item.dest }}"
+        state: link
+      loop:
+        - { source: "/usr/bin/node", dest: "/etc/alternatives/nodejs" }
+        - { source: "/etc/alternatives/nodejs", dest: "/usr/bin/nodejs" }
+
     - name: Install vim
       apt:
         name: vim
@@ -31,9 +40,10 @@
         update_cache: yes
         cache_valid_time: 3600
 
-    - name: Install python-pip
+    #Changing to python3-pip 20230926
+    - name: Install python3-pip
       apt:
-        name: python-pip
+        name: python3-pip
         state: present
         update_cache: yes
         cache_valid_time: 3600

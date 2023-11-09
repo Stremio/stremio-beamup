@@ -1,6 +1,17 @@
 terraform {
   required_version = ">= 0.12"
+
+  required_providers {
+    cherryservers = {
+      source  = "terraform.local/local/cherryservers"
+      version = "1.0.0"
+    }
+  }
+
 }
+
+
+# Variables
 
 provider "cherryservers" {
   auth_token = trimspace(file("./creds/cherryservers"))
@@ -15,11 +26,11 @@ variable "public_keys" {
 }
 
 variable "region" {
-  default = "EU-East-1"
+  default = "EU-Nord-1"
 }
 
 variable "image" {
-  default = "Debian 9 64bit"
+  default = "Debian 10 64bit"
 }
 
 variable "domain" {
@@ -27,34 +38,66 @@ variable "domain" {
 }
 
 variable "swarm_nodes" {
-  default = "1"
+  default = 1
 }
 
-# corresponds to ssd_smart16
-variable "plan_id" {
-  default = "94"
+# About plans
+# Smart Servers are not supported anymore, like id 94 for ssd_smart16
+# Virtual Servers no longer have Debian 10 and that is needed for Dokku v0.20.
+# @TODO Update Dokku so new versions of Debian can be used and VDS from CherryServers too
+# Working plans are Dedicated Servers like:
+# E3-1240v3 is 86
+# E3-1240V5 is 113
+# E5-1650V2 is 106 
+variable "deployer_plan_id" {
+  default = "86"
+}
+
+variable "swarm_plan_id" {
+  default = "113"
 }
 
 variable "username" {
   default = "beamup"
 }
 
+variable "deployment_environment" {
+  description = "The environment this infrastructure should be associated with, like stating, development, etc."
+  type        = string
+  default     = "production"
+}
+
+# Resources
+
+## Execute a local command to log the public_key value
+#resource "null_resource" "log_public_key" {
+#  triggers = {
+#    always_run = "${timestamp()}"
+#  }
+#
+#  provisioner "local-exec" {
+#    command = "echo ${file("${var.private_key}.pub")}"
+#  }
+#}
+
 resource "cherryservers_ssh" "tf_deploy_key" {
-  name       = "tf_deploy_key_testing"
-  public_key = file("${var.private_key}.pub")
+  name       = "tf_deploy_key_${var.deployment_environment}"
+#https://github.com/hashicorp/terraform/issues/7531
+  public_key = "${replace(file("${var.private_key}.pub"), "\n", "")}"
 }
 
 # The controller/deployer server
 resource "cherryservers_server" "deployer" {
-  project_id   = trimspace(file("./creds/cherryservers-project-id"))
+  project_id   = trimspace(file("./creds/cherryservers_project_id"))
   region       = var.region
   hostname     = "stremio-addon-deployer"
   image        = var.image
-  plan_id      = var.plan_id
+  plan_id      = var.deployer_plan_id
   ssh_keys_ids = [cherryservers_ssh.tf_deploy_key.id]
   tags = {
-    Name        = "deployer"
-    Environment = "Stremio Beamup"
+    Name        = "stremio-addon-deployer"
+    Project     = "beamup"
+    Environment = var.deployment_environment
   }
 }
 
@@ -115,19 +158,16 @@ resource "null_resource" "deployer_setup" {
 # TODO: add deployer in authorized-keys
 resource "cherryservers_server" "swarm" {
   count      = var.swarm_nodes
-  project_id = trimspace(file("./creds/cherryservers-project-id"))
+  project_id = trimspace(file("./creds/cherryservers_project_id"))
   region     = var.region
   hostname   = "stremio-beamup-swarm-${count.index}"
   image      = var.image
-  # ssd_smart16 is 94
-  # E3-1240v3 is 86
-  # E3-1240V5 is 113
-  # E5-1650V2 is 106
-  plan_id      = "86"
+  plan_id      = var.swarm_plan_id
   ssh_keys_ids = [cherryservers_ssh.tf_deploy_key.id]
   tags = {
-    Name        = "swarm"
-    Environment = "Stremio Beamup"
+    Name        = "stremio-beamup-swarm-${count.index}"
+    Project     = "beamup"
+    Environment = var.deployment_environment
   }
 }
 
@@ -202,12 +242,13 @@ resource "null_resource" "swarm_os_setup" {
   #
   # Init the swarm on the first server
   provisioner "local-exec" {
-    command = "ansible -T 30 -u root -m docker_swarm -a 'state=present' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
+    command = "ansible -T 30 -u root -m community.docker.docker_swarm -a 'state=present subnet_size=16' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory-file=$GOPATH/bin/terraform-inventory swarm_0"
 
     environment = {
       TF_STATE = "./"
     }
   }
+
 }
 
 data "external" "swarm_tokens" {
@@ -219,6 +260,7 @@ data "external" "swarm_tokens" {
   }
 
   depends_on = [null_resource.swarm_os_setup]
+
 }
 
 data "external" "workdir" {
