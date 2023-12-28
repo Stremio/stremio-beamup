@@ -1,4 +1,35 @@
 #!/bin/bash
+#!/bin/bash
+
+: '
+Script Name: delete_addon.sh
+Description: 
+    This script automates the process of deleting a specified addon from BeamUp. It includes steps for removing the addon from Docker Registry, Dokku, and Cloudflare DNS.
+
+Usage:
+    ./tools/delete_addon.sh <addon_name>
+    - addon_name: The name of the addon to be deleted.
+
+Prerequisites:
+    - Ensure that the following variables are correctly set in the script:
+      SWARM_SERVER, DOCKER_REGISTRY_SERVER, DOKKU_SERVER, DOMAIN, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID.
+    - jq (command-line JSON processor) must be installed.
+
+TODO:
+    - [ ] Add error handling for network issues during API calls.
+    - [ ] Implement logging for audit trails.
+    - [ ] Extend functionality to handle multiple addon deletions.
+    - [ ] Certify support for multi-swarm server environment.
+
+Disclaimers:
+    - This script is designed for a single swarm server setup and has not been tested in a multi-swarm server environment. While it may work in such environments, this functionality is not guaranteed.
+    - This script does not verify beforehand if the addon is running.
+
+'
+
+# Rest of the script starts here
+# ...
+
 
 # Set server and domain variables
 SWARM_SERVER="beamup@stremio-beamup-swarm-0"
