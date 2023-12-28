@@ -1,0 +1,253 @@
+#!/bin/bash
+#!/bin/bash
+
+: '
+Script Name: delete_addon.sh
+Description: 
+    This script automates the process of deleting a specified addon from BeamUp. It includes steps for removing the addon from Docker Registry, Dokku, and Cloudflare DNS.
+
+Usage:
+    ./tools/delete_addon.sh <addon_name>
+    - addon_name: The name of the addon to be deleted.
+
+Prerequisites:
+    - Ensure that the following variables are correctly set in the script:
+      SWARM_SERVER, DOCKER_REGISTRY_SERVER, DOKKU_SERVER, DOMAIN, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID.
+    - jq (command-line JSON processor) must be installed.
+
+TODO:
+    - [ ] Add error handling for network issues during API calls.
+    - [ ] Implement logging for audit trails.
+    - [ ] Extend functionality to handle multiple addon deletions.
+    - [ ] Certify support for multi-swarm server environment.
+
+Disclaimers:
+    - This script is designed for a single swarm server setup and has not been tested in a multi-swarm server environment. While it may work in such environments, this functionality is not guaranteed.
+    - This script does not verify beforehand if the addon is running.
+
+'
+
+# Rest of the script starts here
+# ...
+
+
+# Set server and domain variables
+SWARM_SERVER="beamup@stremio-beamup-swarm-0"
+DOKKU_SERVER="beamup@stremio-beamup-deployer"
+DOMAIN="beamup.dev"  # Set your domain here
+
+# Read CloudFlare credentials from files
+CLOUDFLARE_API_TOKEN=$(< "./creds/cloudflare_token")
+CLOUDFLARE_ZONE_ID=$(< "./creds/cloudflare_zone_id")
+
+# Other vars:
+DOCKER_REGISTRY_SERVER=$SWARM_SERVER
+TIME_TO_WAIT=30
+
+
+# Function to get CloudFlare Domain from Zone ID
+get_cloudflare_domain() {
+    local response=$(curl -s "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID" \
+         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+         -H "Content-Type: application/json")
+    echo $response | jq -r '.result.name'
+}
+
+# Function to get CloudFlare DNS record ID
+get_cloudflare_dns_record_id() {
+    local record_name="$ADDON_NAME.$DOMAIN"
+    local response=$(curl -s "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records?type=A&name=$record_name" \
+         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+         -H "Content-Type: application/json")
+    echo $response | jq -r '.result[0].id'
+}
+
+# Function to validate add-on name
+validate_addon_name() {
+    local addon_name=$1
+    # Check for empty input
+    if [[ -z $addon_name ]]; then
+        echo "Invalid input: Add-on name cannot be empty."
+        exit 1
+    fi
+    # Check if the add-on name contains an asterisk '*'
+    if [[ $addon_name == *"*"* ]]; then
+        echo "Invalid input: Asterisks (*) are not allowed in the add-on name."
+        exit 1
+    fi
+}
+
+# Function to display usage message
+usage() {
+    echo "Usage: $0 addon_name"
+    echo "  addon_name: Name of the add-on to delete"
+    exit 1
+}
+
+# Function to delete from Docker Registry with verification
+delete_from_docker_registry() {
+    echo
+    echo "------------------------------------------"
+    echo "Deleting from Docker Registry..."
+    if ! ssh -q $DOCKER_REGISTRY_SERVER "sudo rm -rf /var/lib/registry/docker/registry/v2/repositories/dokku/$ADDON_NAME/"; then
+        echo "Error: Failed to delete repository in Docker Registry."
+        exit 1
+    fi
+
+    # Verification
+    if ssh -q $DOCKER_REGISTRY_SERVER "curl -s http://localhost:5000/v2/_catalog | jq . | grep -i $ADDON_NAME"; then
+        echo "Error: Repository still exists in Docker Registry."
+        exit 1
+    else
+        echo "Repository successfully deleted from Docker Registry."
+        echo "------------------------------------------"
+	echo
+    fi
+}
+
+# Function to delete from Dokku with verification
+delete_from_dokku() {
+    echo "------------------------------------------"
+    echo "Deleting from Dokku..."
+    if ! ssh -q $DOKKU_SERVER "sudo dokku --force apps:destroy $ADDON_NAME"; then
+        echo "Error: Failed to destroy app in Dokku."
+        exit 1
+    fi
+
+    # Verification
+    if ssh -q $DOKKU_SERVER "dokku apps:list | grep -i $ADDON_NAME"; then
+        echo "Error: App still exists in Dokku."
+        exit 1
+    else
+        echo "App successfully destroyed in Dokku."
+        echo "------------------------------------------"
+	echo
+    fi
+}
+
+# Function to trigger sync
+trigger_sync() {
+    echo "------------------------------------------"
+    echo "Triggering sync..."
+    ssh -q $DOKKU_SERVER "sudo ssh -q -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0 sync" || { echo "Error: SSH command failed."; exit 1; }
+
+    echo
+    echo "Waiting $TIME_TO_WAIT seconds for docker swarm to update its tasks"
+    sleep $TIME_TO_WAIT
+
+    echo "Sync finished"
+    echo "------------------------------------------"
+    echo
+}
+
+# Function to delete CloudFlare DNS record
+delete_cloudflare_dns() {
+    local dns_record_id=$(get_cloudflare_dns_record_id)
+    if [ -z "$dns_record_id" ]; then
+        echo "Error: Unable to find DNS record ID for $ADDON_NAME."
+        exit 1
+    fi
+
+    echo "Deleting CloudFlare DNS record with ID $dns_record_id..."
+    local response_code=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/$dns_record_id" \
+         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+         -H "Content-Type: application/json")
+    if [ "$response_code" != "200" ]; then
+        echo "Error: Failed to delete DNS record. HTTP response code: $response_code"
+        exit 1
+    else
+        echo "DNS record successfully deleted."
+    fi
+}
+
+# Function to verify CloudFlare record deletion
+verify_dns_record_deletion_by_name() {
+    echo "Verifying removal from CloudFlare..."
+    local record_name="$ADDON_NAME.$DOMAIN"
+    local response=$(curl -s "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records?type=A&name=$record_name" \
+         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+         -H "Content-Type: application/json")
+
+    # Check if the record still exists
+    local record_exists=$(echo $response | jq -r '.result | length')
+    if [[ $record_exists -eq 0 ]]; then
+        echo "- DNS record for $record_name successfully deleted."
+	echo
+    else
+        echo "Error: DNS record for $record_name still exists."
+        exit 1
+    fi
+}
+
+# Function to verify everything
+verification_process() {
+    # Verification steps
+    echo "Verifying removal from Docker Swarm services..."
+    if ssh -q $SWARM_SERVER "docker service ls | grep -i $ADDON_NAME"; then
+        echo "Error: Service for $ADDON_NAME still exists in Docker Swarm."
+        exit 1
+    else
+        echo "- Service for $ADDON_NAME successfully removed from Docker Swarm."
+	echo
+    fi
+
+    echo "Verifying removal from Nginx configurations..."
+    if ssh -q $SWARM_SERVER "grep -Ri $ADDON_NAME /etc/nginx/"; then
+        echo "Error: Nginx configuration for $ADDON_NAME still exists."
+        exit 1
+    else
+        echo "- Nginx configuration for $ADDON_NAME successfully removed."
+	echo
+    fi
+
+    echo "Verifying no running containers for $ADDON_NAME..."
+    if ssh -q $SWARM_SERVER "docker ps | grep -i $ADDON_NAME"; then
+        echo "Error: Containers for $ADDON_NAME are still running."
+        exit 1
+    else
+        echo "- No running containers for $ADDON_NAME."
+	echo
+    fi
+
+    verify_dns_record_deletion_by_name
+}
+
+# Main execution
+
+# Check if exactly one argument is provided
+if [[ $# -ne 1 ]]; then
+    usage
+fi
+
+ADDON_NAME="$1"
+validate_addon_name "$ADDON_NAME"
+
+# Display key variables for verification
+echo "Running script with the following settings:"
+echo "Add-on Name: $ADDON_NAME"
+echo "Swarm Server: $SWARM_SERVER"
+echo "Docker Registry Server: $DOCKER_REGISTRY_SERVER"
+echo "Dokku Server: $DOKKU_SERVER"
+echo "Domain: $DOMAIN"
+echo "CloudFlare Zone ID: $CLOUDFLARE_ZONE_ID"
+CLOUDFLARE_DOMAIN=$(get_cloudflare_domain)
+echo "CloudFlare Domain: $CLOUDFLARE_DOMAIN"
+# Optionally hide the token display for security
+# echo "CloudFlare API Token: $CLOUDFLARE_API_TOKEN"
+echo "------------------------------------------"
+
+# Confirmation prompt
+read -p "Do you want to continue with these settings? (yes/no): " confirmation
+if [[ $confirmation != "yes" ]]; then
+    echo "Operation aborted by user."
+    exit 1
+fi
+
+delete_from_docker_registry
+delete_from_dokku
+trigger_sync
+delete_cloudflare_dns
+verification_process
+
+echo "Add-on removal process completed."
+
