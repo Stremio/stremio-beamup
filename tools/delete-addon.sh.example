@@ -52,32 +52,32 @@ TOTAL_APP_LIMIT=300
 # Function to display usage message
 usage() {
     echo "Usage: $0 addon_name"
-    echo "  addon_name: Name of the add-on to delete"
-    echo "  Please quote the add-on name to prevent globbing."
+    echo "  addon_name: Name of the addon to delete"
+    echo "  Please quote the addon name to prevent globbing."
     exit 1
 }
 
-# Function to validate add-on name
+# Function to validate addon name
 validate_addon_name() {
     local addon_name=$1
     # Check for empty input
     if [[ -z $addon_name ]]; then
-        echo "Invalid input: Add-on name cannot be empty."
+        echo "Invalid input: Addon name cannot be empty."
         exit 1
     fi
-    # Check if the add-on name contains an asterisk '*'
+    # Check if the addon name contains an asterisk '*'
     if [[ $addon_name == *"*"* ]]; then
-        echo "Invalid input: Asterisks (*) are not allowed in the add-on name."
+        echo "Invalid input: Asterisks (*) are not allowed in the addon name."
         exit 1
     fi
-    # Check if the add-on name contains a full stop '.'
+    # Check if the addon name contains a full stop '.'
     if [[ $addon_name == *"."* ]]; then
-        echo "Invalid input: Full stops (.) are not allowed in the add-on name."
+        echo "Invalid input: Full stops (.) are not allowed in the addon name."
         exit 1
     fi
     # Check no strange character is used
     if [[ ! $addon_name =~ ^[a-zA-Z0-9_-]+$ ]]; then
-    echo "Error: Invalid add-on name. Add-on names must only contain letters, numbers, underscores, or dashes."
+    echo "Error: Invalid addon name. Addon names must only contain letters, numbers, underscores, or dashes."
     exit 1
 fi
 }
@@ -157,6 +157,7 @@ get_cloudflare_dns_record_id() {
 
 # Function to delete CloudFlare DNS record
 delete_cloudflare_dns() {
+    echo "------------------------------------------"
     local dns_record_id=$(get_cloudflare_dns_record_id)
     if [ -z "$dns_record_id" ]; then
         echo "Error: Unable to find DNS record ID for $ADDON_NAME."
@@ -172,6 +173,8 @@ delete_cloudflare_dns() {
         exit 1
     else
         echo "DNS record successfully deleted."
+        echo "------------------------------------------"
+	echo
     fi
 }
 
@@ -239,7 +242,7 @@ validate_addon_name "$ADDON_NAME"
 
 # Display key variables for verification
 echo "Running script with the following settings:"
-echo "Add-on Name: $ADDON_NAME"
+echo "Addon Name: $ADDON_NAME"
 echo "Swarm Server: $SWARM_SERVER"
 echo "Docker Registry Server: $DOCKER_REGISTRY_SERVER"
 echo "Dokku Server: $DOKKU_SERVER"
@@ -264,5 +267,5 @@ trigger_sync
 delete_cloudflare_dns
 verification_process
 
-echo "Add-on removal process completed."
+echo "Addon removal process completed for \"$ADDON_NAME\"."
 
