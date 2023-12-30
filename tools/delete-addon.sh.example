@@ -121,7 +121,7 @@ delete_from_dokku() {
     fi
 
     # Verification
-    if ssh -q $DOKKU_SERVER "dokku apps:exists $ADDON_NAME"; then
+    if ssh -q $DOKKU_SERVER "dokku apps:exists $ADDON_NAME" &>/dev/null; then
         echo "Error: App still exists in Dokku."
         exit 1
     else
@@ -158,13 +158,14 @@ get_cloudflare_dns_record_id() {
 # Function to delete CloudFlare DNS record
 delete_cloudflare_dns() {
     echo "------------------------------------------"
+    echo "Finding CloudFlare DNS record ID for $ADDON_NAME.$DOMAIN"
     local dns_record_id=$(get_cloudflare_dns_record_id)
     if [ -z "$dns_record_id" ]; then
         echo "Error: Unable to find DNS record ID for $ADDON_NAME."
         exit 1
     fi
 
-    echo "Deleting CloudFlare DNS record with ID $dns_record_id..."
+    echo "Deleting CloudFlare DNS record with ID $dns_record_id"
     local response_code=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records/$dns_record_id" \
          -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
          -H "Content-Type: application/json")
