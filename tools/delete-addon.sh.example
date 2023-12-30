@@ -16,10 +16,12 @@ Prerequisites:
     - jq (command-line JSON processor) must be installed.
 
 TODO:
+    - [ ] Check service/config exists before deleting in each step.
     - [ ] Add error handling for network issues during API calls.
     - [ ] Implement logging for audit trails.
     - [ ] Extend functionality to handle multiple addon deletions.
     - [ ] Certify support for multi-swarm server environment.
+    - [ ] Migrate this script to Ansible altogether as it will have many improvements like idempotency.
 
 Disclaimers:
     - This script is designed for a single swarm server setup and has not been tested in a multi-swarm server environment. While it may work in such environments, this functionality is not guaranteed.
@@ -27,9 +29,8 @@ Disclaimers:
 
 '
 
-# Rest of the script starts here
-# ...
 
+# VARIABLES
 
 # Set server and domain variables
 SWARM_SERVER="beamup@stremio-beamup-swarm-0"
@@ -43,23 +44,17 @@ CLOUDFLARE_ZONE_ID=$(< "./creds/cloudflare_zone_id")
 # Other vars:
 DOCKER_REGISTRY_SERVER=$SWARM_SERVER
 TIME_TO_WAIT=30
+TOTAL_APP_LIMIT=300
 
 
-# Function to get CloudFlare Domain from Zone ID
-get_cloudflare_domain() {
-    local response=$(curl -s "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID" \
-         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-         -H "Content-Type: application/json")
-    echo $response | jq -r '.result.name'
-}
+# FUNCTIONS
 
-# Function to get CloudFlare DNS record ID
-get_cloudflare_dns_record_id() {
-    local record_name="$ADDON_NAME.$DOMAIN"
-    local response=$(curl -s "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records?type=A&name=$record_name" \
-         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-         -H "Content-Type: application/json")
-    echo $response | jq -r '.result[0].id'
+# Function to display usage message
+usage() {
+    echo "Usage: $0 addon_name"
+    echo "  addon_name: Name of the add-on to delete"
+    echo "  Please quote the add-on name to prevent globbing."
+    exit 1
 }
 
 # Function to validate add-on name
@@ -75,13 +70,24 @@ validate_addon_name() {
         echo "Invalid input: Asterisks (*) are not allowed in the add-on name."
         exit 1
     fi
+    # Check if the add-on name contains a full stop '.'
+    if [[ $addon_name == *"."* ]]; then
+        echo "Invalid input: Full stops (.) are not allowed in the add-on name."
+        exit 1
+    fi
+    # Check no strange character is used
+    if [[ ! $addon_name =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    echo "Error: Invalid add-on name. Add-on names must only contain letters, numbers, underscores, or dashes."
+    exit 1
+fi
 }
 
-# Function to display usage message
-usage() {
-    echo "Usage: $0 addon_name"
-    echo "  addon_name: Name of the add-on to delete"
-    exit 1
+# Function to get CloudFlare Domain from Zone ID
+get_cloudflare_domain() {
+    local response=$(curl -s "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID" \
+         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+         -H "Content-Type: application/json")
+    echo $response | jq -r '.result.name'
 }
 
 # Function to delete from Docker Registry with verification
@@ -95,7 +101,7 @@ delete_from_docker_registry() {
     fi
 
     # Verification
-    if ssh -q $DOCKER_REGISTRY_SERVER "curl -s http://localhost:5000/v2/_catalog | jq . | grep -i $ADDON_NAME"; then
+    if ssh -q $DOCKER_REGISTRY_SERVER "curl -s http://localhost:5000/v2/_catalog?n=${TOTAL_APP_LIMIT} | jq -e '.repositories[] | select(. == \"dokku/$ADDON_NAME\")'"; then
         echo "Error: Repository still exists in Docker Registry."
         exit 1
     else
@@ -115,7 +121,7 @@ delete_from_dokku() {
     fi
 
     # Verification
-    if ssh -q $DOKKU_SERVER "dokku apps:list | grep -i $ADDON_NAME"; then
+    if ssh -q $DOKKU_SERVER "dokku apps:exists $ADDON_NAME"; then
         echo "Error: App still exists in Dokku."
         exit 1
     else
@@ -138,6 +144,15 @@ trigger_sync() {
     echo "Sync finished"
     echo "------------------------------------------"
     echo
+}
+
+# Function to get CloudFlare DNS record ID
+get_cloudflare_dns_record_id() {
+    local record_name="$ADDON_NAME.$DOMAIN"
+    local response=$(curl -s "https://api.cloudflare.com/client/v4/zones/$CLOUDFLARE_ZONE_ID/dns_records?type=A&name=$record_name" \
+         -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+         -H "Content-Type: application/json")
+    echo $response | jq -r '.result[0].id'
 }
 
 # Function to delete CloudFlare DNS record
@@ -182,17 +197,8 @@ verify_dns_record_deletion_by_name() {
 # Function to verify everything
 verification_process() {
     # Verification steps
-    echo "Verifying removal from Docker Swarm services..."
-    if ssh -q $SWARM_SERVER "docker service ls | grep -i $ADDON_NAME"; then
-        echo "Error: Service for $ADDON_NAME still exists in Docker Swarm."
-        exit 1
-    else
-        echo "- Service for $ADDON_NAME successfully removed from Docker Swarm."
-	echo
-    fi
-
     echo "Verifying removal from Nginx configurations..."
-    if ssh -q $SWARM_SERVER "grep -Ri $ADDON_NAME /etc/nginx/"; then
+    if ssh -q $SWARM_SERVER "grep -Riw 'upstream $ADDON_NAME ' /etc/nginx/"; then
         echo "Error: Nginx configuration for $ADDON_NAME still exists."
         exit 1
     else
@@ -200,8 +206,17 @@ verification_process() {
 	echo
     fi
 
+    echo "Verifying removal from Docker Swarm services..."
+    if ssh -q $SWARM_SERVER "docker service ls | awk '{print \$2}' | grep -i '^$ADDON_NAME\$'"; then
+        echo "Error: Service for $ADDON_NAME still exists in Docker Swarm."
+        exit 1
+    else
+        echo "- Service for $ADDON_NAME successfully removed from Docker Swarm."
+	echo
+    fi
+
     echo "Verifying no running containers for $ADDON_NAME..."
-    if ssh -q $SWARM_SERVER "docker ps | grep -i $ADDON_NAME"; then
+    if ssh -q $SWARM_SERVER "docker ps | awk '{print \$2}' | awk -F '/' '{print \$3}' | awk -F ':' '{print $1}' | grep -i '^$ADDON_NAME\$'"; then
         echo "Error: Containers for $ADDON_NAME are still running."
         exit 1
     else
