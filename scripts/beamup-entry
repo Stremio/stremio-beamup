@@ -38,8 +38,15 @@ then
 		exit 1
 	fi
 	case "$APP_NAME" in
-		${GITHUB_USER_HASHED}-*) dokku $1 $APP_NAME "$3";;
-		*)  exit 1 ;;
+		${GITHUB_USER_HASHED}-*)
+			if [ "$1" == "config:set" ] 
+			then
+				dokku $1 $APP_NAME "${@:3}"
+			else
+				dokku $1 $APP_NAME "$3"
+			fi ;;
+		*) 
+			exit 1 ;;
 	esac
 else
 	echo "unsupported command"
