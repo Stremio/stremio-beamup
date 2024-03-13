@@ -1,5 +1,4 @@
 #!/bin/bash
-#!/bin/bash
 
 : '
 Script Name: delete_addon.sh
@@ -14,8 +13,10 @@ Prerequisites:
     - Ensure that the following variables are correctly set in the script:
       SWARM_SERVER, DOCKER_REGISTRY_SERVER, DOKKU_SERVER, DOMAIN, CLOUDFLARE_API_TOKEN, CLOUDFLARE_ZONE_ID.
     - jq (command-line JSON processor) must be installed.
+    - You should have access SSH access to servers and have sudo permission.
 
 TODO:
+    - [ ] Compare DOMAIN value with the one retrieved from CloudFlare with the Zone ID.
     - [ ] Check service/config exists before deleting in each step.
     - [ ] Add error handling for network issues during API calls.
     - [ ] Implement logging for audit trails.
@@ -33,8 +34,8 @@ Disclaimers:
 # VARIABLES
 
 # Set server and domain variables
-SWARM_SERVER="beamup@stremio-beamup-swarm-0"
 DOKKU_SERVER="beamup@stremio-beamup-deployer"
+SWARM_SERVER="beamup@stremio-beamup-swarm-0"
 DOMAIN="beamup.dev"  # Set your domain here
 
 # Read CloudFlare credentials from files
