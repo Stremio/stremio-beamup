@@ -4,8 +4,8 @@ if [ -z $DOMAIN ] ; then
 	DOMAIN=beamup.dev
 fi
 
-wget https://raw.githubusercontent.com/dokku/dokku/v0.20.0/bootstrap.sh
-sudo DOKKU_TAG=v0.20.0 bash bootstrap.sh
+wget https://raw.githubusercontent.com/dokku/dokku/v0.26.8/bootstrap.sh
+sudo DOKKU_TAG=v0.26.8 bash bootstrap.sh
 
 echo "dokku dokku/web_config boolean false"		| sudo debconf-set-selections
 echo "dokku dokku/vhost_enable boolean true"		| sudo debconf-set-selections
