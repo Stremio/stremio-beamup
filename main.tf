@@ -30,7 +30,7 @@ variable "region" {
 }
 
 variable "image" {
-  default = "Debian 10 64bit"
+  default = "Debian 11 64bit"
 }
 
 variable "domain" {
