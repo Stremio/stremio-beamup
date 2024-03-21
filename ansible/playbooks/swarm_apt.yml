@@ -8,7 +8,7 @@
         cache_valid_time: 3600
 
     - name: Update nodejs package apt /modern version/
-      shell: 'curl -sL https://deb.nodesource.com/setup_18.x | bash - '
+      shell: 'curl -sL https://deb.nodesource.com/setup_20.x | bash - '
 
     - name: Install nodejs
       apt:
