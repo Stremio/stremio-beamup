@@ -28,7 +28,7 @@ variable "public_keys" {
 variable "terraform_inventory_path" {
   description = "The path to the terraform-inventory binary"
   type        = string
-  default     = "terraform-inventory"
+  default     = "/usr/local/bin/terraform-inventory"
 }
 
 variable "region" {

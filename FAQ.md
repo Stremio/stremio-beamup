@@ -10,7 +10,7 @@
      wget https://github.com/adammck/terraform-inventory/releases/download/v0.10/terraform-inventory_v0.10_linux_amd64.zip
      ```
 
-2. **Extract the binary** and move it to `/usr/local/bin`:
+2. **Extract the binary** and move it to `/usr/local/bin` and update the terraform var `terraform_provider_path` accordingly:
    ```bash
    unzip terraform-inventory_v0.10_linux_amd64.zip
    sudo mv terraform-inventory /usr/local/bin/
