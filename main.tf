@@ -204,6 +204,10 @@ resource "null_resource" "swarm_docker_create" {
   }
 
   provisioner "local-exec" {
+    command = "ansible-galaxy install -f geerlingguy.pip"
+  }
+
+  provisioner "local-exec" {
     command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/docker.yml"
 
     environment = {

@@ -5,4 +5,6 @@
       docker_apt_ignore_key_error: False
       docker_service_state: started
       docker_install_compose: true
-
+    - role: geerlingguy.pip
+      pip_install_packages:
+        - name: docker
