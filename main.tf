@@ -6,6 +6,10 @@ terraform {
       source  = "terraform.local/local/cherryservers"
       version = "1.0.0"
     }
+#    ansible = {
+#      version = "~> 1.2.0"
+#      source  = "ansible/ansible"
+#    }
   }
 
 }
@@ -177,9 +181,19 @@ resource "cherryservers_server" "swarm" {
   }
 }
 
+resource "null_resource" "apt_update" {
+  depends_on = [cherryservers_server.swarm]
+
+  provisioner "local-exec" {
+    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/apt_update.yml"
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+}
 
 resource "null_resource" "swarm_docker_create" {
-  depends_on = [cherryservers_server.swarm]
+  depends_on = [null_resource.apt_update]
 
   provisioner "local-exec" {
     command = "echo 'Waiting for setup scripts to finish...' && sleep 60"
