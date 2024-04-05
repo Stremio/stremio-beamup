@@ -1,0 +1,7 @@
+---
+- name: playbook | Update index of apt
+  hosts: all
+  tasks:
+    - name: task | Update apt cache
+      apt:
+        update_cache: yes
