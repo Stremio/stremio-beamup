@@ -11,7 +11,7 @@ set -x
 eval "$(jq -r '@sh "HOST=\(.host) SSH_KEY=\(.private_key)"')"
 
 # Determine which user to use (pseudo-code)
-if ssh -i $SSH_KEY beamup@$HOST "echo success" >/dev/null 2>&1; then
+if ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -i $SSH_KEY beamup@$HOST "echo success" >/dev/null 2>&1; then
     SSH_USER=beamup
 else
     SSH_USER=root
