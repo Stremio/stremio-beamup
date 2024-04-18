@@ -337,6 +337,17 @@ resource "null_resource" "swarm_docker_setup" {
       TF_STATE = "./"
     }
   }
+
+  #
+  # Run setup for swarm_0
+  #
+  provisioner "local-exec" {
+    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --extra-vars 'domain=${var.domain}' ${path.cwd}/ansible/playbooks/swarm_0_setup.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
 }
 
 resource "null_resource" "ansible_beamup_users" {
@@ -547,7 +558,7 @@ resource "null_resource" "swarm_deployer_script" {
   }
 
   provisioner "local-exec" {
-    command = format("ansible -T 30 -u ${var.username} -m shell -a 'echo \"command=\\\"/home/beamup/beamup-swarm-entry \\$SSH_ORIGINAL_COMMAND\\\",restrict %s\" >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm", file("./id_ed25519_deployer_sync.pub"))
+    command = format("ansible -T 30 -u ${var.username} -m shell -a 'echo \"command=\\\"beamup-swarm-entry \\$SSH_ORIGINAL_COMMAND\\\",restrict %s\" >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm", file("./id_ed25519_deployer_sync.pub"))
 
     environment = {
       TF_STATE = "./"

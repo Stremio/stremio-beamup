@@ -1,0 +1,7 @@
+- hosts: swarm_0
+  tasks:
+    - name: Install the beamup swarm scripts
+      copy:
+        src: ../../scripts/beamup-swarm-entry
+        dest: /usr/local/bin/
+        mode: 0755
