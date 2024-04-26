@@ -1,5 +1,5 @@
 [plugin]
 description = "Beamup sync swarm: orchestrates deployment across a swarm"
-version = "0.0.1"
+version = "0.34.4"
 [plugin.config]
 
