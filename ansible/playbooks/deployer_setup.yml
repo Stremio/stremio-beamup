@@ -9,17 +9,16 @@
     - name: Run the deployer setup script
       shell: 'DOMAIN={{ domain }} /usr/local/bin/beamup-setup-deployer'
 
-
-    - name: Copy the beamup dokku plugin structure
+    - name: Copy the dokku beamup plugin structure
       copy:
         src: ../../dokku-plugins/beamup-trigger-swarm-sync
         dest: /var/lib/dokku/plugins/available
         mode: 0755
 
-    - name: Generate the beamup dokku plugin
+    - name: Generate the dokku beamup plugin post-deploy script
       template:
-        src: ../../dokku-plugins/beamup-trigger-swarm-sync.j2
-        dest: /var/lib/dokku/plugins/available/beamup-trigger-swarm-sync
+        src: ../templates/beamup-trigger-swarm-sync/post-deploy.j2
+        dest: /var/lib/dokku/plugins/available/beamup-trigger-swarm-sync/post-deploy
         mode: 0755
 
     - name: Enable the beamup dokku plugin
