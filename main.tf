@@ -324,6 +324,16 @@ resource "null_resource" "swarm_docker_join" {
 resource "null_resource" "swarm_docker_setup" {
   depends_on = [null_resource.swarm_docker_join, null_resource.swarm_initial_setup]
 
+  #
+  # Run setup for swarm_0
+  #
+  provisioner "local-exec" {
+    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --extra-vars 'domain=${var.domain}' ${path.cwd}/ansible/playbooks/swarm_0_setup.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
 
   #
   # Copy beamup swarm setup script & execute
@@ -352,16 +362,6 @@ resource "null_resource" "swarm_docker_setup" {
     }
   }
 
-  #
-  # Run setup for swarm_0
-  #
-  provisioner "local-exec" {
-    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --extra-vars 'domain=${var.domain}' ${path.cwd}/ansible/playbooks/swarm_0_setup.yml"
-
-    environment = {
-      TF_STATE = "./"
-    }
-  }
 }
 
 resource "null_resource" "ansible_beamup_users" {

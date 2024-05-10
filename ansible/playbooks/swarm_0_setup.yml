@@ -1,7 +1,12 @@
 - hosts: swarm_0
   tasks:
+    - name: Merge node labels and new labels
+      community.docker.docker_node:
+        hostname: stremio-beamup-swarm-0
+        labels:
+          short_name: swarm-0
     - name: Install the beamup swarm scripts
-      copy:
+      ansible.builtin.copy:
         src: ../../scripts/beamup-swarm-entry
         dest: /usr/local/bin/
         mode: 0755

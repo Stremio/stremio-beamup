@@ -14,6 +14,10 @@ services:
           - /var/lib/registry:/var/lib/registry
         ports:
           - '5000:5000'
+        deploy:
+          placement:
+            constraints:
+              - node.labels.short_name == swarm-0
 EOF
 docker stack rm beamup_control
 docker stack deploy --compose-file registry.yaml beamup_control
