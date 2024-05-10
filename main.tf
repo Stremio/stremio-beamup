@@ -303,6 +303,8 @@ data "external" "workdir" {
   program = ["${path.cwd}/scripts/fetch-workdir.sh"]
 }
 
+#TODO
+#Use docker_swarm ansible module
 resource "null_resource" "swarm_docker_join" {
   depends_on = [null_resource.swarm_os_setup, data.external.swarm_tokens]
   count      = var.swarm_nodes > 1 ? var.swarm_nodes - 1 : 0
@@ -517,6 +519,8 @@ resource "null_resource" "deployer_tunnel_setup" {
     }
   }
 
+#TODO
+#Check this resource and specially this next provisioner as it looks like it is not required.
   provisioner "local-exec" {
     command = "ansible -T 30 -b -u ${var.username} -m shell -a 'echo -n command=\"beamup-sync-and-deploy\",restrict,permitopen=\"localhost:5000\" && cat /home/${var.username}/.ssh/id_ed25519_deployer_tunnel.pub >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm_0"
 
