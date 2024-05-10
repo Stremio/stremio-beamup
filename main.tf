@@ -111,15 +111,26 @@ resource "cherryservers_server" "deployer" {
   }
 }
 
-resource "null_resource" "deployer_setup" {
+resource "null_resource" "deployer_apt_update" {
   depends_on = [cherryservers_server.deployer]
+
+  provisioner "local-exec" {
+    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --limit deployer ${path.cwd}/ansible/playbooks/apt_update.yml"
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+}
+
+resource "null_resource" "deployer_setup" {
+  depends_on = [null_resource.deployer_apt_update]
 
   provisioner "local-exec" {
     command = "echo 'Waiting for setup scripts to finish...' && sleep 60"
   }
 
   provisioner "local-exec" {
-    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='127.0.1.1 stremio-addon-deployer'\" deployer"
+    command = "ansible -m hostname -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"name=stremio-addon-deployer\" deployer"
 
     environment = {
       TF_STATE = "./"
@@ -127,7 +138,7 @@ resource "null_resource" "deployer_setup" {
   }
 
   provisioner "local-exec" {
-    command = "ansible -m hostname -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"name=stremio-addon-deployer\" deployer"
+    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='127.0.1.1 stremio-addon-deployer'\" deployer"
 
     environment = {
       TF_STATE = "./"
@@ -181,19 +192,42 @@ resource "cherryservers_server" "swarm" {
   }
 }
 
-resource "null_resource" "apt_update" {
+resource "null_resource" "swarm_apt_update" {
   depends_on = [cherryservers_server.swarm]
 
   provisioner "local-exec" {
-    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/apt_update.yml"
+    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --limit swarm ${path.cwd}/ansible/playbooks/apt_update.yml"
     environment = {
       TF_STATE = "./"
     }
   }
 }
 
-resource "null_resource" "swarm_docker_create" {
-  depends_on = [null_resource.apt_update]
+resource "null_resource" "swarm_initial_setup" {
+  count = var.swarm_nodes
+
+  depends_on = [null_resource.swarm_apt_update]
+
+  provisioner "local-exec" {
+    command = "ansible -m hostname -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"name=stremio-beamup-swarm-${count.index}\" swarm_${count.index}"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+
+  provisioner "local-exec" {
+    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='127.0.1.1 stremio-beamup-swarm-${count.index}'\" swarm_${count.index}"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+
+}
+
+resource "null_resource" "swarm_install_docker" {
+  depends_on = [null_resource.swarm_initial_setup]
 
   provisioner "local-exec" {
     command = "echo 'Waiting for setup scripts to finish...' && sleep 60"
@@ -216,47 +250,25 @@ resource "null_resource" "swarm_docker_create" {
   }
 }
 
-resource "null_resource" "swarm_hosts" {
-  count = var.swarm_nodes
-
-  depends_on = [cherryservers_server.swarm]
-
-  provisioner "local-exec" {
-    command = "ansible -m hostname -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"name=stremio-beamup-swarm-${count.index}\" swarm_${count.index}"
-
-    environment = {
-      TF_STATE = "./"
-    }
-  }
-
-  provisioner "local-exec" {
-    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='127.0.1.1 stremio-beamup-swarm-${count.index}'\" swarm_${count.index}"
-
-    environment = {
-      TF_STATE = "./"
-    }
-  }
-}
-
 resource "null_resource" "swarm_os_setup" {
-  depends_on = [null_resource.swarm_docker_create]
-
-  #
-  # Fine tune some sysctl values
-  #
-  provisioner "local-exec" {
-    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/swarm_os.yml"
-
-    environment = {
-      TF_STATE = "./"
-    }
-  }
+  depends_on = [null_resource.swarm_install_docker]
 
   #
   # Install packages
   #
   provisioner "local-exec" {
     command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/swarm_apt.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+
+  #
+  # Fine tune some sysctl values
+  #
+  provisioner "local-exec" {
+    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/swarm_os.yml"
 
     environment = {
       TF_STATE = "./"
@@ -293,7 +305,7 @@ data "external" "workdir" {
 
 resource "null_resource" "swarm_docker_join" {
   depends_on = [null_resource.swarm_os_setup, data.external.swarm_tokens]
-  count      = 1
+  count      = var.swarm_nodes > 1 ? var.swarm_nodes - 1 : 0
 
   connection {
     private_key = file(var.private_key)
@@ -302,13 +314,13 @@ resource "null_resource" "swarm_docker_join" {
 
   provisioner "remote-exec" {
     inline = [
-      "${var.swarm_nodes - 1 > 0 ? format("docker swarm join --token %s %s:2377", data.external.swarm_tokens.result.manager, cherryservers_server.swarm.0.primary_ip) : "echo skipping..."}"
+      "${var.swarm_nodes - 1 > 0 ? format("docker swarm join --token %s %s:2377", data.external.swarm_tokens.result.manager, cherryservers_server.swarm.0.private_ip) : "echo skipping..."}"
     ]
   }
 }
 
 resource "null_resource" "swarm_docker_setup" {
-  depends_on = [null_resource.swarm_docker_join, null_resource.swarm_hosts]
+  depends_on = [null_resource.swarm_docker_join, null_resource.swarm_initial_setup]
 
 
   #
