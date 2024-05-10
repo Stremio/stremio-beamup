@@ -20,7 +20,6 @@ services:`
 const APP_TMPL = (appName, image, port) => `   ${appName}:
         image: ${image}
         deploy:
-          mode: global
           resources:
             limits:
               cpus: '1'
@@ -38,7 +37,6 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
 const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
         image: ${image}
         deploy:
-          mode: global
           resources:
             limits:
               cpus: '1'
