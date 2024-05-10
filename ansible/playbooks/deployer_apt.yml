@@ -32,3 +32,10 @@
         state: present
         update_cache: yes
         cache_valid_time: 3600
+
+    - name: Install jq
+      apt:
+        name: jq
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
