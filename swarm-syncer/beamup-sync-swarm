@@ -24,7 +24,7 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
             limits:
               cpus: '1'
               memory: 1024M
-	    reservations:
+            reservations:
               cpus: '0.5'
               memory: 256M
           restart_policy:
@@ -44,7 +44,7 @@ const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
             limits:
               cpus: '1'
               memory: 1024M
-	    reservations:
+            reservations:
               cpus: '0.5'
               memory: 256M
           restart_policy:
