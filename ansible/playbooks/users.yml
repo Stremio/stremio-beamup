@@ -4,7 +4,8 @@
       adduser_user_name: "{{ username }}"
       adduser_expires: "-1"
       adduser_groups: [ "sudo", "docker" ]
-      adduser_password: '$6$nBeXHSQt9/l3A./a$hjN0vhdG5whnYxcC4I9/lXCejzOG8UaM4UA.orfwnuN6/JBB88VCYs3K4U7KDmRULcSbB/qbr70uModkCBBf./'
+      adduser_password: "{{ password_hash }}"
+        #adduser_password: '$6$nBeXHSQt9/l3A./a$hjN0vhdG5whnYxcC4I9/lXCejzOG8UaM4UA.orfwnuN6/JBB88VCYs3K4U7KDmRULcSbB/qbr70uModkCBBf./'
       adduser_public_keys:
         - "{{ user_pubkey }}"
       adduser_sudoroot: false

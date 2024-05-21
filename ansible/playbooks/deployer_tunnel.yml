@@ -1,4 +1,9 @@
 - hosts: deployer
+  vars:
+    user_homes:
+      - { name: "root", home: "/root" }
+      - { name: "{{ username }}", home: "/home/{{ username }}" }
+      - { name: "dokku", home: "/home/dokku" }
   tasks:
     - name: Upload deployer SSH tunnel key for user dokku
       copy:
@@ -17,35 +22,78 @@
         owner: '{{ username }}'
         group: '{{ username }}'
 
-    - name: Discover SSH keys [1/6]
-      shell: 'ssh-keyscan -T 10 {{ swarm_0_ip }} >> /root/.ssh/known_hosts'
+   
+    - name: Discover SSH keys for all swarm nodes and add to known_hosts
+      shell: 'ssh-keyscan -T 10 {{ item.0 }} >> {{ item.1.home }}/.ssh/known_hosts'
+      loop: "{{ groups['swarm'] | product(user_homes) | list }}"
+      when: groups['swarm'] is defined and groups['swarm'] | length > 0 
 
-    - name: Discover SSH keys [2/6]
-      shell: 'ssh-keyscan -T 10 {{ swarm_1_ip }} >> /root/.ssh/known_hosts'
+    # Discover SSH keys by names
+    - name: Determine the number of swarm nodes
+      set_fact:
+        swarm_node_count: "{{ groups['swarm'] | length }}"
 
-    - name: Discover SSH keys [3/6]
-      shell: 'ssh-keyscan -T 10 {{ swarm_0_ip }} >> /home/{{ username }}/.ssh/known_hosts'
+    - name: Generate hostnames dynamically
+      set_fact:
+        hostnames: "{{ hostnames | default([]) + ['stremio-beamup-swarm-' ~ item] }}"
+      loop: "{{ range(0, swarm_node_count | int) | list }}"
 
-    - name: Discover SSH keys [4/6]
-      shell: 'ssh-keyscan -T 10 {{ swarm_1_ip }} >> /home/{{ username }}/.ssh/known_hosts'
 
-    - name: Discover SSH keys [5/6]
-      shell: 'ssh-keyscan -T 10 {{ swarm_0_name }} >> /home/dokku/.ssh/known_hosts'
+    - name: Discover SSH keys for dynamically generated hostnames and add to known_hosts
+      shell: 'ssh-keyscan -T 10 {{ item.0 }} >> {{ item.1.home }}/.ssh/known_hosts'
+      loop: "{{ hostnames | product(user_homes) | list }}"
+      when: hostnames is defined and hostnames | length > 0
 
-    - name: Discover SSH keys [6/6]
-      shell: 'ssh-keyscan -T 10 {{ swarm_1_name }} >> /home/dokku/.ssh/known_hosts'
-
-    - name: Fix file permissions [1/2]
+    
+    # Fix file permissions
+    - name: Fix file permissions for known_hosts in each user's home
       file:
-        path: '/home/{{ username }}/.ssh/known_hosts'
-        owner: '{{ username }}'
-        group: '{{ username }}'
+        path: "{{ item.home }}/.ssh/known_hosts"
+        owner: "{{ item.name }}"
+        group: "{{ item.name }}"
+        mode: '0600'
+      loop: "{{ user_homes }}"
 
-    - name: Fix file permissions [2/2]
-      file:
-        path: '/home/dokku/.ssh/known_hosts'
-        owner: dokku
-        group: dokku
+
+
+          #    - name: Discover SSH keys for all swarm nodes and add to known_hosts
+          #      shell: 'ssh-keyscan -T 10 {{ hostvars[host].ansible_host }} >> {{ item.home }}/.ssh/known_hosts'
+          #      loop:
+          #        - { name: "root", home: "/root" }
+          #        - { name: "{{ username }}", home: "/home/{{ username }}" }
+          #        - { name: "dokku", home: "/home/dokku" }
+          #      with_items: "{{ groups['swarm'] }}"
+          #      when: groups['swarm'] is defined
+          #
+          #    - name: Discover SSH keys [1/6]
+          #      shell: 'ssh-keyscan -T 10 {{ swarm_0_ip }} >> /root/.ssh/known_hosts'
+          #
+          #    - name: Discover SSH keys [2/6]
+          #      shell: 'ssh-keyscan -T 10 {{ swarm_1_ip }} >> /root/.ssh/known_hosts'
+          #
+          #    - name: Discover SSH keys [3/6]
+          #      shell: 'ssh-keyscan -T 10 {{ swarm_0_ip }} >> /home/{{ username }}/.ssh/known_hosts'
+          #
+          #    - name: Discover SSH keys [4/6]
+          #      shell: 'ssh-keyscan -T 10 {{ swarm_1_ip }} >> /home/{{ username }}/.ssh/known_hosts'
+          #
+          #    - name: Discover SSH keys [5/6]
+          #      shell: 'ssh-keyscan -T 10 {{ swarm_0_name }} >> /home/dokku/.ssh/known_hosts'
+          #
+          #    - name: Discover SSH keys [6/6]
+          #      shell: 'ssh-keyscan -T 10 {{ swarm_1_name }} >> /home/dokku/.ssh/known_hosts'
+
+        #    - name: Fix file permissions [1/2]
+        #      file:
+        #        path: '/home/{{ username }}/.ssh/known_hosts'
+        #        owner: '{{ username }}'
+        #        group: '{{ username }}'
+        #
+        #    - name: Fix file permissions [2/2]
+        #      file:
+        #        path: '/home/dokku/.ssh/known_hosts'
+        #        owner: dokku
+        #        group: dokku
 
     - name: Copy the secure tunnnel service file
       copy:

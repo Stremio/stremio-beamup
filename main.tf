@@ -51,6 +51,12 @@ variable "swarm_nodes" {
   default = 1
 }
 
+#https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#how-do-i-generate-encrypted-passwords-for-the-user-module
+variable "user_password_hash" {
+  description = "The password for the OS user in SHA512"
+  type        = string
+}
+
 # About plans
 # Smart Servers are not supported anymore, like id 94 for ssd_smart16
 # Virtual Servers no longer have Debian 10 and that is needed for Dokku v0.20.
@@ -380,7 +386,7 @@ resource "null_resource" "ansible_beamup_users" {
   }
 
   provisioner "local-exec" {
-    command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=${var.username}' --extra-vars 'user_pubkey=${format("%s/%s", data.external.workdir.result.workdir, var.public_keys)}' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/users.yml"
+    command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --extra-vars 'username=${var.username}' --extra-vars 'user_pubkey=${format("%s/%s", data.external.workdir.result.workdir, var.public_keys)}' --extra-vars 'password_hash=${var.user_password_hash}' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/users.yml"
 
     environment = {
       TF_STATE = "./"
@@ -401,26 +407,23 @@ resource "null_resource" "ansible_beamup_users" {
 #
 # After creating this resource, root access via SSH is forbidden; login as user 'beamup'/the configured default user instead
 #
+resource "null_resource" "swarm_ansible_configure_ssh" {
+  depends_on = [null_resource.ansible_beamup_users]
+
+  count = var.swarm_nodes
+
+  provisioner "local-exec" {
+    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='${cherryservers_server.swarm[count.index].primary_ip} ${cherryservers_server.swarm[count.index].hostname}'\" all"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+
+}
+
 resource "null_resource" "ansible_configure_ssh" {
-  depends_on = [
-    null_resource.ansible_beamup_users,
-  ]
-
-  provisioner "local-exec" {
-    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='${cherryservers_server.swarm.0.primary_ip} ${cherryservers_server.swarm.0.hostname}'\" all"
-
-    environment = {
-      TF_STATE = "./"
-    }
-  }
-
-  provisioner "local-exec" {
-    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='${cherryservers_server.swarm.0.primary_ip} ${cherryservers_server.swarm.0.hostname}'\" all"
-
-    environment = {
-      TF_STATE = "./"
-    }
-  }
+  depends_on = [null_resource.swarm_ansible_configure_ssh]
 
   provisioner "local-exec" {
     command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='${cherryservers_server.deployer.primary_ip} ${cherryservers_server.deployer.hostname}'\" all"
@@ -438,6 +441,7 @@ resource "null_resource" "ansible_configure_ssh" {
     }
   }
 }
+
 
 resource "null_resource" "ansible_configure_cron" {
   depends_on = [
@@ -530,7 +534,7 @@ resource "null_resource" "deployer_tunnel_setup" {
   }
 
   provisioner "local-exec" {
-    command = "ansible-playbook -T 30 -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --extra-vars 'username=${var.username}' --extra-vars 'swarm_0_ip=${cherryservers_server.swarm.0.primary_ip}' --extra-vars 'swarm_1_ip=${element(cherryservers_server.swarm.*.primary_ip, 1)}' --extra-vars 'swarm_0_name=${cherryservers_server.swarm.0.hostname}' --extra-vars 'swarm_1_name=${element(cherryservers_server.swarm.*.hostname, 1)}' ./ansible/playbooks/deployer_tunnel.yml"
+    command = "ansible-playbook -T 30 -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --extra-vars 'username=${var.username}' ./ansible/playbooks/deployer_tunnel.yml"
 
     environment = {
       TF_STATE = "./"
