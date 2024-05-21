@@ -4,3 +4,8 @@ domain  = "beamup.com"
 swarm_nodes = "1"
 deployer_plan_id = "86" # E3-1240V3 is 86
 swarm_plan_id = "113" # E3-1240V5 is 113
+
+# user_password_hash is Required
+# The password hash can be generated with `mkpasswd --method=sha-512`
+# https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#how-do-i-generate-encrypted-passwords-for-the-user-module
+#user_password_hash = "$6$pbhWc9xT8h6aAZQH$IatvugXNCO6rCuf8zkDZtYrl0r.kAw8HwoVCy7hQSOHWACM.v1QWtoko6lOQi2S1op87ybnwSKXgWincsNB481" # Example with password: ChangeMeOrDie!
