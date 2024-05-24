@@ -284,7 +284,7 @@ resource "null_resource" "swarm_os_setup" {
   #
   # Init the swarm on the first server
   provisioner "local-exec" {
-    command = "ansible -T 30 -u root -m community.docker.docker_swarm -a 'state=present subnet_size=16 advertise_addr=ens4' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm_0"
+    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/swarm_0_init.yml"
 
     environment = {
       TF_STATE = "./"
