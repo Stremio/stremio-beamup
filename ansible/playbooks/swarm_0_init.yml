@@ -9,8 +9,9 @@
         election_tick: 15  # 15 seconds
         heartbeat_tick: 2  # 2 seconds
         state: present
+      register: docker_swarm_result
 
     - name: Check if Swarm was initialized or updated
       debug:
-        msg: "Swarm initialized or updated successfully: {{ result }}"
-      when: result.changed
+        msg: "Swarm initialized or updated successfully: {{ docker_swarm_result }}"
+      when: docker_swarm_result.changed
