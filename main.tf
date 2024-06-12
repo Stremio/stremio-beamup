@@ -461,6 +461,45 @@ resource "null_resource" "ansible_configure_cron" {
   }
 }
 
+resource "null_resource" "ansible_swarm_setup_nginx" {
+  depends_on = [
+    null_resource.ansible_configure_ssh,
+  ]
+
+  provisioner "local-exec" {
+    command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --extra-vars 'username=${var.username}' ./ansible/playbooks/swarm_nginx.yml"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+}
+
+resource "null_resource" "ansible_os_tuning" {
+  depends_on = [
+    null_resource.ansible_configure_ssh,
+  ]
+
+  #Tuning limits for user dokku
+  provisioner "local-exec" {
+    command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/os_tuning.yml -e user=dokku --limit deployer"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+
+  #Tuning limits for user www-data for nginx only on first swarm node (balancer)
+  provisioner "local-exec" {
+    command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/os_tuning.yml -e user=www-data --limit swarm_0"
+
+    environment = {
+      TF_STATE = "./"
+    }
+  }
+}
+
+
 resource "null_resource" "ansible_swarm_disable_swap" {
   depends_on = [
     null_resource.ansible_configure_ssh,
@@ -472,20 +511,6 @@ resource "null_resource" "ansible_swarm_disable_swap" {
 
   provisioner "local-exec" {
     command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/disable-swap.yml"
-
-    environment = {
-      TF_STATE = "./"
-    }
-  }
-}
-
-resource "null_resource" "ansible_swarm_setup_nginx" {
-  depends_on = [
-    null_resource.ansible_configure_ssh,
-  ]
-
-  provisioner "local-exec" {
-    command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --extra-vars 'username=${var.username}' ./ansible/playbooks/swarm_nginx.yml"
 
     environment = {
       TF_STATE = "./"
