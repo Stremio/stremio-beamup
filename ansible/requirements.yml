@@ -2,7 +2,7 @@ collections:
   #  - name: ansible.posix
   #    version: "~1.5.4"
   - name: cloud.terraform
-    version: ">=2.1.0"
+    version: ">=1.0.0,<2.0.0"
 
 roles:
   - name: geerlingguy.swap
