@@ -1,9 +1,10 @@
 # dev.tfvars
 deployment_environment = "production"
-domain  = "beamup.com"
-swarm_nodes = "1"
-deployer_plan_id = "86" # E3-1240V3 is 86
-swarm_plan_id = "113" # E3-1240V5 is 113
+domain                 = "beamup.com"
+swarm_nodes            = "3" #It's been tested with 1 and 3 nodes
+region                 = "EU-Nord-1"
+deployer_plan_slug     = "E3-1240V3" # ID 86
+swarm_plan_slug        = "E3-1240V5" # ID 113
 
 # user_password_hash is Required
 # The password hash can be generated with `mkpasswd --method=sha-512`
