@@ -1,15 +1,19 @@
 terraform {
-  required_version = ">= 0.12"
+  required_version = ">= 1.8"
 
   required_providers {
     cherryservers = {
-      source  = "terraform.local/local/cherryservers"
-      version = "1.0.0"
+      source = "cherryservers/cherryservers"
+      version = "0.0.5"
     }
-#    ansible = {
-#      version = "~> 1.2.0"
-#      source  = "ansible/ansible"
+#    cherryservers = {
+#      source  = "terraform.local/local/cherryservers"
+#      version = "1.0.0"
 #    }
+    ansible = {
+      version = "~> 1.3.0"
+      source  = "ansible/ansible"
+    }
   }
 
 }
@@ -18,7 +22,7 @@ terraform {
 # Variables
 
 provider "cherryservers" {
-  auth_token = trimspace(file("./creds/cherryservers"))
+  api_token = trimspace(file("./creds/cherryservers"))
 }
 
 variable "private_key" {
@@ -30,9 +34,10 @@ variable "public_keys" {
 }
 
 variable "terraform_inventory_path" {
-  description = "The path to the terraform-inventory binary"
+  description = "The path to the terraform-inventory"
   type        = string
-  default     = "/usr/local/bin/terraform-inventory"
+  #default     = "/usr/local/bin/terraform-inventory"
+  default     = "inventory.yml"
 }
 
 variable "region" {
@@ -60,17 +65,12 @@ variable "user_password_hash" {
 # About plans
 # Smart Servers are not supported anymore, like id 94 for ssd_smart16
 # Virtual Servers no longer have Debian 10 and that is needed for Dokku v0.20.
-# @TODO Update Dokku so new versions of Debian can be used and VDS from CherryServers too
-# Working plans are Dedicated Servers like:
-# E3-1240v3 is 86
-# E3-1240V5 is 113
-# E5-1650V2 is 106 
-variable "deployer_plan_id" {
-  default = "86"
+variable "deployer_plan_slug" {
+  default = "cloud_vds_2"
 }
 
-variable "swarm_plan_id" {
-  default = "113"
+variable "swarm_plan_slug" {
+  default = "cloud_vps_6"
 }
 
 variable "username" {
@@ -96,7 +96,7 @@ variable "deployment_environment" {
 #  }
 #}
 
-resource "cherryservers_ssh" "tf_deploy_key" {
+resource "cherryservers_ssh_key" "tf_deploy_key" {
   name       = "tf_deploy_key_${var.deployment_environment}"
 #https://github.com/hashicorp/terraform/issues/7531
   public_key = "${replace(file("${var.private_key}.pub"), "\n", "")}"
@@ -104,21 +104,44 @@ resource "cherryservers_ssh" "tf_deploy_key" {
 
 # The controller/deployer server
 resource "cherryservers_server" "deployer" {
+  #Required
+  plan         = var.deployer_plan_slug
   project_id   = trimspace(file("./creds/cherryservers_project_id"))
   region       = var.region
+  #Optional
   hostname     = "stremio-addon-deployer"
   image        = var.image
-  plan_id      = var.deployer_plan_id
-  ssh_keys_ids = [cherryservers_ssh.tf_deploy_key.id]
+  ssh_key_ids  = [cherryservers_ssh_key.tf_deploy_key.id]
   tags = {
-    Name        = "stremio-addon-deployer"
-    Project     = "beamup"
-    Environment = var.deployment_environment
+    Name         = "stremio-addon-deployer"
+    Project      = "beamup"
+    Environment  = var.deployment_environment
   }
 }
 
-resource "null_resource" "deployer_apt_update" {
+resource "ansible_host" "deployer" {
   depends_on = [cherryservers_server.deployer]
+
+  name   = "${cherryservers_server.deployer.ip_addresses[0].address}"
+  groups = ["deployer"]
+
+  variables = {
+    greetings   = "from deployer!"
+    some        = "variable"
+  }
+}
+
+output "deployer_server_ip_addresses" {
+  value = cherryservers_server.deployer.ip_addresses
+}
+
+
+resource "null_resource" "deployer_apt_update" {
+  depends_on = [ansible_host.deployer]
+
+  provisioner "local-exec" {
+    command = "ansible-galaxy install -f -r ansible/requirements.yml"
+  }
 
   provisioner "local-exec" {
     command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --limit deployer ${path.cwd}/ansible/playbooks/apt_update.yml"
@@ -184,13 +207,15 @@ resource "null_resource" "deployer_setup" {
 # The swarm servers
 # TODO: add deployer in authorized-keys
 resource "cherryservers_server" "swarm" {
-  count      = var.swarm_nodes
-  project_id = trimspace(file("./creds/cherryservers_project_id"))
-  region     = var.region
-  hostname   = "stremio-beamup-swarm-${count.index}"
-  image      = var.image
-  plan_id      = var.swarm_plan_id
-  ssh_keys_ids = [cherryservers_ssh.tf_deploy_key.id]
+  #Required
+  plan        = var.swarm_plan_slug
+  project_id  = trimspace(file("./creds/cherryservers_project_id"))
+  region      = var.region
+  #Optional
+  count       = var.swarm_nodes
+  hostname    = "stremio-beamup-swarm-${count.index}"
+  image       = var.image
+  ssh_key_ids = [cherryservers_ssh_key.tf_deploy_key.id]
   tags = {
     Name        = "stremio-beamup-swarm-${count.index}"
     Project     = "beamup"
@@ -198,8 +223,32 @@ resource "cherryservers_server" "swarm" {
   }
 }
 
-resource "null_resource" "swarm_apt_update" {
+resource "ansible_host" "swarm_host" {
   depends_on = [cherryservers_server.swarm]
+
+  count = var.swarm_nodes  # Same count as your server instances
+
+  #name   = "stremio-beamup-swarm-${count.index}"
+  name   = "${cherryservers_server.swarm[count.index].ip_addresses[0].address}"
+  groups = ["swarm","swarm_${count.index}"]
+
+  variables = {
+    greetings   = "Hello from swarm node ${count.index}!"
+    hostname    = cherryservers_server.swarm[count.index].hostname
+#    public_ip   = cherryservers_server.swarm[count.index].ip_addresses[0] # Assuming the first IP is public
+#    private_ip  = cherryservers_server.swarm[count.index].ip_addresses[1] # Assuming the second IP is private
+    # Additional variables can be added here
+  }
+}
+
+
+output "swarm_servers_ip_addresses" {
+  value = { for server in cherryservers_server.swarm : server.hostname => server.ip_addresses }
+}
+
+
+resource "null_resource" "swarm_apt_update" {
+  depends_on = [ansible_host.swarm_host]
 
   provisioner "local-exec" {
     command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --limit swarm ${path.cwd}/ansible/playbooks/apt_update.yml"
@@ -237,14 +286,6 @@ resource "null_resource" "swarm_install_docker" {
 
   provisioner "local-exec" {
     command = "echo 'Waiting for setup scripts to finish...' && sleep 60"
-  }
-
-  provisioner "local-exec" {
-    command = "ansible-galaxy install -f geerlingguy.docker"
-  }
-
-  provisioner "local-exec" {
-    command = "ansible-galaxy install -f geerlingguy.pip"
   }
 
   provisioner "local-exec" {
@@ -297,7 +338,7 @@ data "external" "swarm_tokens" {
   program = ["${path.cwd}/scripts/fetch-tokens.sh"]
 
   query = {
-    host        = "${cherryservers_server.swarm.0.primary_ip}"
+    host        = "${cherryservers_server.swarm.0.ip_addresses[0].address}"
     private_key = "${var.private_key}"
   }
 
@@ -317,12 +358,12 @@ resource "null_resource" "swarm_docker_join" {
 
   connection {
     private_key = file(var.private_key)
-    host        = element(cherryservers_server.swarm.*.primary_ip, count.index + 1)
+    host = cherryservers_server.swarm[count.index + 1].ip_addresses[0].address
   }
 
   provisioner "remote-exec" {
     inline = [
-      "${var.swarm_nodes - 1 > 0 ? format("docker swarm join --token %s %s:2377", data.external.swarm_tokens.result.manager, cherryservers_server.swarm.0.private_ip) : "echo skipping..."}"
+      "${var.swarm_nodes - 1 > 0 ? format("docker swarm join --token %s %s:2377", data.external.swarm_tokens.result.manager, cherryservers_server.swarm.0.ip_addresses[1].address) : "echo skipping..."}"
     ]
   }
 }
@@ -374,10 +415,6 @@ resource "null_resource" "ansible_beamup_users" {
   depends_on = [null_resource.swarm_docker_setup, null_resource.deployer_setup]
 
   provisioner "local-exec" {
-    command = "ansible-galaxy install -f juju4.adduser"
-  }
-
-  provisioner "local-exec" {
     command = "ansible -T 30 -u root -m apt -a 'name=sudo state=present update_cache=yes cache_valid_time=3600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm"
 
     environment = {
@@ -413,7 +450,7 @@ resource "null_resource" "swarm_ansible_configure_ssh" {
   count = var.swarm_nodes
 
   provisioner "local-exec" {
-    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='${cherryservers_server.swarm[count.index].primary_ip} ${cherryservers_server.swarm[count.index].hostname}'\" all"
+    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='${cherryservers_server.swarm[count.index].ip_addresses[0].address} ${cherryservers_server.swarm[count.index].hostname}'\" all"
 
     environment = {
       TF_STATE = "./"
@@ -426,7 +463,7 @@ resource "null_resource" "ansible_configure_ssh" {
   depends_on = [null_resource.swarm_ansible_configure_ssh]
 
   provisioner "local-exec" {
-    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='${cherryservers_server.deployer.primary_ip} ${cherryservers_server.deployer.hostname}'\" all"
+    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='${cherryservers_server.deployer.ip_addresses[0].address} ${cherryservers_server.deployer.hostname}'\" all"
 
     environment = {
       TF_STATE = "./"
@@ -447,10 +484,6 @@ resource "null_resource" "ansible_configure_cron" {
   depends_on = [
     null_resource.ansible_configure_ssh,
   ]
-
-  provisioner "local-exec" {
-    command = "ansible-galaxy install -f manala.cron"
-  }
 
   provisioner "local-exec" {
     command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/cron.yml"
@@ -506,10 +539,6 @@ resource "null_resource" "ansible_swarm_disable_swap" {
   ]
 
   provisioner "local-exec" {
-    command = "ansible-galaxy install -f geerlingguy.swap"
-  }
-
-  provisioner "local-exec" {
     command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/disable-swap.yml"
 
     environment = {
@@ -525,7 +554,7 @@ data "template_file" "ssh_tunnel_service" {
 
   vars = {
     username = "${var.username}"
-    target   = "${cherryservers_server.swarm.0.primary_ip}"
+    target   = "${cherryservers_server.swarm.0.ip_addresses[0].address}"
   }
 }
 
@@ -575,7 +604,7 @@ data "template_file" "beamup_sync_swarm" {
   vars = {
     cloudflare_token   = "${trimspace(file("./creds/cloudflare_token"))}"
     cloudflare_zone_id = "${trimspace(file("./creds/cloudflare_zone_id"))}"
-    cf_origin_ips      = "${cherryservers_server.swarm.0.primary_ip}"
+    cf_origin_ips      = "${cherryservers_server.swarm.0.ip_addresses[0].address}"
   }
 }
 

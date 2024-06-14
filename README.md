@@ -11,7 +11,6 @@ To deploy this yourself, you'll need:
 * A [Cherryservers account](https://portal.cherryservers.com/#/register) and API key
 * [Terraform](https://www.terraform.io/downloads.html) - tested with version 1.6.2
 * [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) - tested with ansible community package 7.2
-* [terraform-inventory](https://github.com/adammck/terraform-inventory) - tested with version v0.10 - (See [FAQ](./FAQ.md) for installation details)
 * A domain name
 * A [CloudFlare account](https://www.cloudflare.com/) and API token
 
