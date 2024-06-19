@@ -46,3 +46,22 @@
         state: present
         update_cache: yes
         cache_valid_time: 3600
+
+     # Install sysstat for sar reporting
+    - name: Install sysstat
+      apt:
+        name: sysstat
+        state: present
+
+    - name: Configure sysstat
+      lineinfile:
+        dest: /etc/default/sysstat
+        regexp: '^ENABLED='
+        line: 'ENABLED="true"'
+        state: present
+
+    - name: Start sysstat
+      service:
+        name: sysstat
+        state: started
+        enabled: yes
