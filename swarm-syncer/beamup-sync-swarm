@@ -9,14 +9,13 @@ const START_PORT = 8000
 const TOTAL_APP_LIMIT = 300
 const REGISTRY_URL = 'http://127.0.0.1:5000'
 
-const HEADER = `version: '3.7'
-services:`
+// https://docs.docker.com/compose/compose-file/04-version-and-name/#version-top-level-element-obsolete
+// Compose Specification is being used
+const HEADER = `services:`
 
 // @TODO: assigning a random port may not be needed, just use the docker overlay network to reach the container (use it's IP)
 // @TODO: syslog for centralized log collection
-// By default,the restart policy is "any" (it will always restart)
-// @TODO restart max attempts?
-// @TODO hardware limits
+// @TODO implement a way so services are started after the registry, something like the depends_on
 const APP_TMPL = (appName, image, port) => `   ${appName}:
         image: ${image}
         deploy:
@@ -29,7 +28,8 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
               memory: 64M
           restart_policy:
               max_attempts: 10
-              window: 1h
+              window: 5m
+              delay: 60s
         environment:
           - PORT=${port}
         command: /start web
@@ -49,7 +49,8 @@ const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
               memory: 64M
           restart_policy:
               max_attempts: 10
-              window: 1h
+              window: 5m
+              delay: 60s
         environment:
           - PORT=${port}
         ports:
