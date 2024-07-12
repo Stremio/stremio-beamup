@@ -45,3 +45,32 @@
 Choose the option that best fits your setup needs. The direct download method is quicker if Go isn't required for other purposes, while installing via Go might be preferable for those already using Go for development.
 
 "**Note on Customization:** You can specify a custom path for `terraform-inventory` by updating the `terraform_inventory_path` Terraform variable as needed."
+
+## How to use CherryServers Terraform provider when it is not available in Terraform Registry:
+
+1. **Setup CherryServers Provider for Terraform**:
+   When the provider is not available on the Terraform Registry: [CherryServers provider](https://github.com/hashicorp/terraform-provider-cherryservers) because it is not being actively updated, you'll need to install it manually by following these steps:
+   
+   - **Download CherryServers Provider**: Navigate to the [CherryServers Download Page](http://downloads.cherryservers.com/other/terraform/) and download the file named `terraform-provider-cherryservers`.
+   
+   - **Place the File**: Move the downloaded `terraform-provider-cherryservers` file to the following directory structure (this is for Linux users):
+     ```bash
+     ~/.terraform.d/plugins/terraform.local/local/cherryservers/1.0.0/linux_amd64/
+     ```
+
+   - **Define the Provider in the `main.tf` File**: Define the provider in the `main.tf` file as follows:
+     ```hcl
+     terraform {
+       required_providers {
+         cherryservers = {
+           source  = "terraform.local/local/cherryservers"
+           version = "1.0.0"
+         }
+       }
+     }
+     ```
+
+2. **Initialize Terraform**: Run the following command to initialize Terraform with the new provider:
+   ```bash
+   terraform init
+
