@@ -52,7 +52,7 @@ Since the [CherryServers provider](https://github.com/hashicorp/terraform-provid
 9. Create a DNS A Record for the deployer's public IP, e.g.: `deployer.beamup.dev`.  
 It can be created in CloudFlare. This DNS can be used with `beamup-cli` to deploy the addons.
 
-By default, this will bootstrap a single server called `deployer` that can be used to deploy addons too and a docker swarm with two nodes where the addons will be deployed.
+By default, this will bootstrap a single server called `deployer` that can be used to deploy addons and a docker swarm with three nodes where the addons will be deployed.
 
 **CAVEAT:** Depending on the Cherryservers node setup, the first ansible playbook execution might fail with `"E: Could not get lock /var/lib/dpkg/lock - open (11: Resource temporarily unavailable"` error. This is due to server setup scripts on the Cherryservers, simply restart the `terraform apply` command.
 
