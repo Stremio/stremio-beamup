@@ -9,8 +9,8 @@ It is based on [Dokku](https://github.com/dokku/dokku), but with two significant
 To deploy this yourself, you'll need:
 
 * A [Cherryservers account](https://portal.cherryservers.com/#/register) and API key
-* [Terraform](https://www.terraform.io/downloads.html) - tested with version 1.6.2
-* [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) - tested with ansible community package 7.2
+* [Terraform](https://www.terraform.io/downloads.html) - tested with version 1.9.x
+* [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) - tested with ansible community package 7.7
 * A domain name
 * A [CloudFlare account](https://www.cloudflare.com/) and API token
 
@@ -42,6 +42,8 @@ This can be done in CloudFlare too in the next step, or it can be registered fro
       terraform apply -var-file=dev.tfvars
       # OR for production
       terraform apply -var-file=prod.tfvars
+      # for production with more debug logs
+      TF_LOG=DEBUG TF_LOG_PATH="./logs/terraform.log" terraform apply -var-file=prod.tfvars
       ```
     Make sure to copy and edit the `.tfvars` files from their corresponding `.tfvars.example` if you haven't done so. Fill in the necessary information for your specific environment (either `development`, `production` or other).  
 9. Create a DNS A Record for the deployer's public IP, e.g.: `deployer.beamup.dev`.  

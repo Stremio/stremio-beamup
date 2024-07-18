@@ -25,16 +25,16 @@ provider "registry.terraform.io/ansible/ansible" {
 }
 
 provider "registry.terraform.io/cherryservers/cherryservers" {
-  version     = "0.0.5"
-  constraints = "0.0.5"
+  version     = "0.0.6"
+  constraints = "~> 0.0.6"
   hashes = [
-    "h1:qhLKSsPjyo+AX2aT135DQVnZQn8QPhXqIQLFxtbQkHI=",
-    "zh:1149d7fe68f1be53ecf1593a24fcb2be438e805d5b6807bd33c194bd2be6594e",
-    "zh:12651040d4d729c6245918c5074517062c5edd6d1d6cca60dbd0f679e54071ef",
-    "zh:34c6d86af8f6551e374b0d4cc74ce75cde138b92fa7869402e7a746f3e496550",
-    "zh:ad10db72659349244c34996d996e34cb9c487e906cdeadc065f7a925b76d8ac6",
+    "h1:vRyjJ6AYvMgRCEGvYeleuM1OfNOTIl6TiXRoMCs17Z0=",
+    "zh:26edc7c8c0fcae508931553388165624c084ba1a1a3e7e23c78427299f884a23",
+    "zh:3c081c886ad4a5feef8f55a21b47a8a3d9fff11fa9c6edf3f34c808d0ee2d7e4",
+    "zh:4ae612bf14f2827f92eefd26b9327422970c8a1c2c4edb13310112e4b1eb7fb0",
+    "zh:cfa22b9dcb01e09201910e60cb319d152090f45db82c6ee6824e95009778d34d",
+    "zh:e438d9601ee0a5e468286d7018ae1ca26931c1ca4f2e0bf60b4c6849f6932f95",
     "zh:f569b65999264a9416862bca5cd2a6177d94ccb0424f3a4ef424428912b9cb3c",
-    "zh:f693c3cb355fb4abd4c2da7a3c0e5e0a84a101d89825e520850ced6f157ef6c2",
   ]
 }
 
