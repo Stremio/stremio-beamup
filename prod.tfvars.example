@@ -2,7 +2,7 @@
 deployment_environment = "production"
 domain                 = "beamup.com"
 swarm_nodes            = "3" #It's been tested with 1 and 3 nodes
-region                 = "EU-Nord-1"
+region                 = "eu_nord_1"
 deployer_plan_slug     = "cloud_vds_6" # ID 720
 swarm_plan_slug        = "cloud_vds_6" # ID 720
 

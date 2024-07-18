@@ -4,7 +4,7 @@ terraform {
   required_providers {
     cherryservers = {
       source = "cherryservers/cherryservers"
-      version = "0.0.5"
+      version = "~> 0.0.6"
     }
 #    cherryservers = {
 #      source  = "terraform.local/local/cherryservers"
@@ -41,11 +41,11 @@ variable "terraform_inventory_path" {
 }
 
 variable "region" {
-  default = "EU-Nord-1"
+  default = "eu_nord_1"
 }
 
 variable "image" {
-  default = "Debian 12 64bit"
+  default = "debian_12_64bit"
 }
 
 variable "domain" {
@@ -104,14 +104,18 @@ resource "cherryservers_ssh_key" "tf_deploy_key" {
 
 # The controller/deployer server
 resource "cherryservers_server" "deployer" {
+  
+  depends_on = [cherryservers_ssh_key.tf_deploy_key] 
+
   #Required
-  plan         = var.deployer_plan_slug
-  project_id   = trimspace(file("./creds/cherryservers_project_id"))
-  region       = var.region
+  plan          = var.deployer_plan_slug
+  project_id    = trimspace(file("./creds/cherryservers_project_id"))
+  region        = var.region
   #Optional
-  hostname     = "stremio-addon-deployer"
-  image        = var.image
-  ssh_key_ids  = [cherryservers_ssh_key.tf_deploy_key.id]
+  hostname      = "stremio-addon-deployer"
+  image         = var.image
+  ssh_key_ids   = [cherryservers_ssh_key.tf_deploy_key.id]
+  spot_instance = false
   tags = {
     Name         = "stremio-addon-deployer"
     Project      = "beamup"
@@ -207,19 +211,23 @@ resource "null_resource" "deployer_setup" {
 # The swarm servers
 # TODO: add deployer in authorized-keys
 resource "cherryservers_server" "swarm" {
+
+  depends_on = [cherryservers_ssh_key.tf_deploy_key] 
+
   #Required
-  plan        = var.swarm_plan_slug
-  project_id  = trimspace(file("./creds/cherryservers_project_id"))
-  region      = var.region
+  plan          = var.swarm_plan_slug
+  project_id    = trimspace(file("./creds/cherryservers_project_id"))
+  region        = var.region
   #Optional
-  count       = var.swarm_nodes
-  hostname    = "stremio-beamup-swarm-${count.index}"
-  image       = var.image
-  ssh_key_ids = [cherryservers_ssh_key.tf_deploy_key.id]
+  count         = var.swarm_nodes
+  hostname      = "stremio-beamup-swarm-${count.index}"
+  image         = var.image
+  ssh_key_ids   = [cherryservers_ssh_key.tf_deploy_key.id]
+  spot_instance = false
   tags = {
-    Name        = "stremio-beamup-swarm-${count.index}"
-    Project     = "beamup"
-    Environment = var.deployment_environment
+    Name         = "stremio-beamup-swarm-${count.index}"
+    Project      = "beamup"
+    Environment  = var.deployment_environment
   }
 }
 
@@ -447,10 +455,9 @@ resource "null_resource" "ansible_beamup_users" {
 resource "null_resource" "swarm_ansible_configure_ssh" {
   depends_on = [null_resource.ansible_beamup_users]
 
-  count = var.swarm_nodes
 
   provisioner "local-exec" {
-    command = "ansible -m lineinfile -b  -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} -a \"dest=/etc/hosts line='${cherryservers_server.swarm[count.index].ip_addresses[0].address} ${cherryservers_server.swarm[count.index].hostname}'\" all"
+    command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/swarm_update_hosts.yml"
 
     environment = {
       TF_STATE = "./"
