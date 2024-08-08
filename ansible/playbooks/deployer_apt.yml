@@ -8,7 +8,7 @@
         cache_valid_time: 3600
 
     - name: Update nodejs package apt /modern version/
-      shell: 'curl -sL https://deb.nodesource.com/setup_12.x | bash - '
+      shell: 'curl -sL https://deb.nodesource.com/setup_20.x | bash - '
 
     - name: Install nodejs
       apt:
@@ -32,3 +32,36 @@
         state: present
         update_cache: yes
         cache_valid_time: 3600
+
+    - name: Install jq
+      apt:
+        name: jq
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: apt | Install rsync
+      apt:
+        name: rsync
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+     # Install sysstat for sar reporting
+    - name: Install sysstat
+      apt:
+        name: sysstat
+        state: present
+
+    - name: Configure sysstat
+      lineinfile:
+        dest: /etc/default/sysstat
+        regexp: '^ENABLED='
+        line: 'ENABLED="true"'
+        state: present
+
+    - name: Start sysstat
+      service:
+        name: sysstat
+        state: started
+        enabled: yes

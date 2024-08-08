@@ -9,9 +9,8 @@ It is based on [Dokku](https://github.com/dokku/dokku), but with two significant
 To deploy this yourself, you'll need:
 
 * A [Cherryservers account](https://portal.cherryservers.com/#/register) and API key
-* [Terraform](https://www.terraform.io/downloads.html) - tested with version 1.6.2
-* [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) - tested with ansible community package 7.2
-* Go & [Terraform inventory](https://github.com/adammck/terraform-inventory)
+* [Terraform](https://www.terraform.io/downloads.html) - tested with version 1.9.x
+* [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) - tested with ansible community package 7.7
 * A domain name
 * A [CloudFlare account](https://www.cloudflare.com/) and API token
 
@@ -34,11 +33,6 @@ This can be done in CloudFlare too in the next step, or it can be registered fro
     4. Create an API Token within CloudFlare with the permission of DNS:Edit for the zone you just created. Save this token to a `cloudflare_token` file in the `creds/` directory.
 
 10. Setup Terraform and apply configurations:
-    - Setup CherryServers Providers for Terraform  
-Since the [CherryServers provider](https://github.com/hashicorp/terraform-provider-cherryservers) is not being actively updated, it is not available on the Terraform Registry. You'll need to install it manually by following these steps:
-        - **Download CherryServers Provider**: Navigate to the [CherryServers Download Page](http://downloads.cherryservers.com/other/terraform/) and download the file named `terraform-provider-cherryservers`.
-        - **Place the File**: Move the downloaded `terraform-provider-cherryservers` file to the following directory structure (this is for Linux users):  
-        `~/.terraform.d/plugins/terraform.local/local/cherryservers/1.0.0/linux_amd64/`
     - Run the Terraform initialization command:
       ```bash
       terraform init
@@ -48,12 +42,14 @@ Since the [CherryServers provider](https://github.com/hashicorp/terraform-provid
       terraform apply -var-file=dev.tfvars
       # OR for production
       terraform apply -var-file=prod.tfvars
+      # for production with more debug logs
+      TF_LOG=DEBUG TF_LOG_PATH="./logs/terraform.log" terraform apply -var-file=prod.tfvars
       ```
     Make sure to copy and edit the `.tfvars` files from their corresponding `.tfvars.example` if you haven't done so. Fill in the necessary information for your specific environment (either `development`, `production` or other).  
 9. Create a DNS A Record for the deployer's public IP, e.g.: `deployer.beamup.dev`.  
 It can be created in CloudFlare. This DNS can be used with `beamup-cli` to deploy the addons.
 
-By default, this will bootstrap a single server called `deployer` that can be used to deploy addons too and a docker swarm with two nodes where the addons will be deployed.
+By default, this will bootstrap a single server called `deployer` that can be used to deploy addons and a docker swarm with three nodes where the addons will be deployed.
 
 **CAVEAT:** Depending on the Cherryservers node setup, the first ansible playbook execution might fail with `"E: Could not get lock /var/lib/dpkg/lock - open (11: Resource temporarily unavailable"` error. This is due to server setup scripts on the Cherryservers, simply restart the `terraform apply` command.
 

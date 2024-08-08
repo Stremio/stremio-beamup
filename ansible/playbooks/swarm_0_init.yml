@@ -1,0 +1,17 @@
+- hosts: swarm_0
+  tasks:
+    #community.docker.docker_swarm -a 'state=present subnet_size=16 advertise_addr=ens4'
+    - name: docker_swarm | Init docker swarm with custom settings
+      community.docker.docker_swarm:
+        subnet_size: 16
+        advertise_addr: ens4
+        dispatcher_heartbeat_period: 10000000000  # 10 seconds in nanoseconds
+        election_tick: 15  # 15 seconds
+        heartbeat_tick: 2  # 2 seconds
+        state: present
+      register: docker_swarm_result
+
+    - name: Check if Swarm was initialized or updated
+      debug:
+        msg: "Swarm initialized or updated successfully: {{ docker_swarm_result }}"
+      when: docker_swarm_result.changed

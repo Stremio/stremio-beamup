@@ -1,0 +1,62 @@
+---
+- name: Playbook for Tuning configuration
+  hosts: all
+  gather_facts: false
+  vars:
+#    Use -e when running ansible-playbook to set this variable
+#    user: ""
+  become: true
+#  serial: 1
+  tasks:
+
+    - name: change file sysctl.conf
+      sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        state: present
+        reload: yes
+      loop:
+        - { name: 'fs.file-max', value: '200000' }
+        - { name: 'kernel.pid_max', value: '65535' }
+        - { name: 'net.core.rmem_default', value: '26214400' }
+        - { name: 'net.core.rmem_max', value: '26214400' }
+        - { name: 'net.core.wmem_default', value: '2621440' }
+        - { name: 'net.core.wmem_max', value: '2621440' }
+        - { name: 'net.core.somaxconn', value: '10000' }
+        - { name: 'vm.swappiness', value: '0' }
+        # https://askubuntu.com/questions/1472428/why-i-got-failed-to-allocate-directory-watch-too-many-open-files
+        # fs.inotify
+        - { name: 'fs.inotify.max_user_instances', value: '1024'}
+        - { name: 'fs.inotify.max_queued_events', value: '32768'}
+        - { name: 'fs.inotify.max_user_watches', value: '24440'}
+
+    - name: change value limits.conf
+      pam_limits:
+        domain: "{{ user }}"
+        limit_type: "{{ item.type }}"
+        limit_item: "{{ item.item }}"
+        value: "{{ item.value }}"
+      loop:
+        - { type: 'soft', item: 'nproc', value: '65535' }
+        - { type: 'hard', item: 'nproc', value: '65535' }
+        - { type: 'soft', item: 'nofile', value: '200000' }
+        - { type: 'hard', item: 'nofile', value: '200000' }
+
+    - name: Configure NPROC limit for systemd services
+      lineinfile:
+        path: "/etc/systemd/{{ item }}"
+        regexp: 'DefaultLimitNPROC'
+        line: DefaultLimitNPROC=65535
+      loop:
+        - 'system.conf' 
+        - 'user.conf' 
+
+    - name: Configure NOFILE limit for systemd services
+      lineinfile:
+        path: "/etc/systemd/{{ item }}"
+        regexp: 'DefaultLimitNOFILE'
+        line: DefaultLimitNOFILE=200000
+      loop:
+        - 'system.conf' 
+        - 'user.conf' 
+...

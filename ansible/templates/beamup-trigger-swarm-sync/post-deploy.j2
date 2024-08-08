@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+echo
+
+echo "============================================================"
+echo "Running beamup-trigger-swarm-sync post-deploy plugin trigger"
+
+# args are $APP $INTERNAL_PORT $INTERNAL_IP_ADDRESS $IMAGE_TAG
+# see https://github.com/dokku/dokku/blob/master/docs/development/plugin-triggers.md
+
+APP=$1
+docker tag dokku/$APP:latest localhost:5000/dokku/$APP:latest
+docker push localhost:5000/dokku/$APP:latest # >/dev/null
+# trigger swarm sync
+# TODO -q
+ssh -T -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0 sync
+
+# beamup-panel URL
+# https://github.com/Stremio/beamup-panel
+echo
+echo -e "\e[1;36m=================================================="
+echo -e "\e[1;93m\tBeamUp Panel Access Information:"
+echo -e "\e[1;36m=================================================="
+# Generated URL with domain:
+echo -e "\e[1;32m\tURL: \e[4;34mhttps://{{ domain }}\e[0m"
+echo -e "\e[1;36m--------------------------------------------------"
+echo -e "\e[0;33m\tNote: This URL will only be accessible if the"
+echo -e "\tBeamUp Panel is enabled and deployed.\e[0m"
+echo -e "\e[1;36m==================================================\e[0m"
+echo

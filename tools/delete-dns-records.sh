@@ -29,7 +29,7 @@ response=$(curl -s -X GET "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/d
 
 # Extract and display Record IDs, Names, and IPs with jq tool
 echo "Records to be deleted in zone $zone_name:"
-record_info=$(echo $response | jq -r ".result[] | select(.content==\"$TARGET_IP_ADDRESS\") | \"ID: \(.id) - Name: \(.name) - IP: \(.content)\"")
+record_info=$(echo $response | jq -r ".result[] | select(.content==\"$TARGET_IP_ADDRESS\") | \"IP: \(.content) - ID: \(.id) - Name: \(.name)\"")
 echo "$record_info"
 
 # Confirm action

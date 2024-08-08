@@ -4,9 +4,10 @@
 # Or actually, alternatively we can do
 # docker service create --name beamup_control_registry --mount type=volume,source=/var/lib/registry,destination=/var/lib/registry --publish published=5000,target=5000 registry:2
 
+# https://docs.docker.com/compose/compose-file/04-version-and-name/#version-top-level-element-obsolete
+# Compose Specification is being used
 mkdir -p /var/lib/registry
 cat <<EOF >registry.yaml
-version: '3.7'
 services:
    registry:
         image: registry:2
@@ -14,11 +15,20 @@ services:
           - /var/lib/registry:/var/lib/registry
         ports:
           - '5000:5000'
+        deploy:
+          placement:
+            constraints:
+              - node.labels.short_name == swarm-0
+        healthcheck:
+          test: ["CMD-SHELL", "wget -q --spider http://localhost:5000 || exit 1"]
+          interval: 1m
+          timeout: 20s
+          retries: 3
 EOF
-docker stack rm beamup_control
-docker stack deploy --compose-file registry.yaml beamup_control
-
-sleep 60
+docker stack rm --detach=false beamup_control
+sleep 10
+docker stack deploy --detach=false --compose-file registry.yaml beamup_control
+sleep 50
 
 beamup-sync-swarm apps.yaml apps.conf
 APPS_COUNT=`cat apps.yaml | grep image | wc -l`
