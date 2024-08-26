@@ -83,6 +83,12 @@ variable "deployment_environment" {
   default     = "production"
 }
 
+variable "first_interface" {
+  description = "This should be the name of the interface that has the Public IP and allows access to Internet"
+  type        = string
+  default     = "eth0"
+}
+
 # Resources
 
 ## Execute a local command to log the public_key value
@@ -667,7 +673,7 @@ resource "null_resource" "hosts_firewall" {
   }
 
   provisioner "local-exec" {
-    command = "ansible-playbook -T 30 -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/iptables.yml"
+    command = "ansible-playbook -T 30 -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --extra-vars 'first_interface=${var.first_interface}' ${path.cwd}/ansible/playbooks/iptables.yml"
 
     environment = {
       TF_STATE = "./"
