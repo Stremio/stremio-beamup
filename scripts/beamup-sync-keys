@@ -6,9 +6,7 @@ const writeFile = promisify(fs.writeFile.bind(fs))
 const readFile = promisify(fs.readFile.bind(fs))
 const httpsGet = args => new Promise((resolve, reject) => https.get(args, resolve).on('error', reject))
 
-const banList = './banlist';
-
-const [AUTH_KEYS_PATH, GITHUB_USER_RAW] = process.argv.slice(2)
+const [AUTH_KEYS_PATH, GITHUB_USER_RAW, GITHUB_USER_HASHED] = process.argv.slice(2)
 if (!(AUTH_KEYS_PATH && GITHUB_USER_RAW)) {
 	console.error(`Usage: beamup-sync-keys <path to authorized_keys> <GitHub username>`)
 	process.exit(1)
@@ -37,7 +35,7 @@ async function getNewAuthKeysContent() {
 		readFile(AUTH_KEYS_PATH),
 		fetchKeys(GITHUB_USER)
 	])
-	const commandStr = `command="GITHUB_USER='${GITHUB_USER}' beamup-entry $SSH_ORIGINAL_COMMAND"`
+	const commandStr = `command="GITHUB_USER='${GITHUB_USER_HASHED}' beamup-entry $SSH_ORIGINAL_COMMAND"`
 	const minusOldKeys = content.toString().split('\n').filter(x => !x.startsWith(commandStr) && x.trim())
 	const newKeys = keys.split('\n').filter(x => x).map(key => `${commandStr},restrict ${key}`)
 	return minusOldKeys.concat(newKeys).join('\n') + '\n'

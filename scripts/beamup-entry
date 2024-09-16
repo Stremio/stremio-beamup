@@ -9,13 +9,38 @@ set -e
 # if we don't do this, dokku just executes that...
 unset SSH_ORIGINAL_COMMAND
 
+is_user_banned () {
+	echo "Checking if $GITHUB_USER_HASHED is banned"
+    if [ -z "$GITHUB_USER_HASHED" ]; then
+        echo "No GITHUB_USER_HASHED: unauthorized"
+        exit 1
+    fi
+
+    BAN_LIST="ban_list.txt"
+
+	# if ban list doesn't exist, carry on with the rest of the code
+    if [ ! -f "$BAN_LIST" ]; then
+        return
+    fi
+
+	# if user is banned exit
+    if grep -q "$GITHUB_USER_HASHED" "$BAN_LIST"; then
+        echo "User is banned"
+        exit 1
+    fi
+}
+
 if [ "$1" = "sync-github-keys" ];
 then
-	beamup-sync-keys "$HOME/.ssh/authorized_keys" "$2" && echo "Successfully authorized GitHub user $2"
+	GITHUB_USER_HASHED=$( echo $2 | shasum -a 256 | cut -c1-12 )
+	is_user_banned
+	./beamup-sync-keys "$HOME/.ssh/authorized_keys" "$2" "$GITHUB_USER_HASHED" && echo "Successfully authorized GitHub user $2"
 	exit 0
 fi
 
-GITHUB_USER=`echo $GITHUB_USER | awk '{print tolower($0)}'`
+GITHUB_USER_HASHED=`echo $GITHUB_USER | awk '{print tolower($0)}'`
+is_user_banned
+
 if [ -z "$GITHUB_USER" ]
 then
 	echo "No GITHUB_USER: unauthorized"
@@ -27,7 +52,6 @@ then
 	# NOTE: this is safe because GitHub usernames cannot have `-` in them
 	APP_NAME="$(echo "$2" | tr '/' '-' | tr -d '"' | tr -d \')"
 	VALIDATION_PATTERN="^[a-zA-Z0-9-]*$"
-	GITHUB_USER_HASHED=$( echo $GITHUB_USER | shasum -a 256 | cut -c1-12 )
 	if [[ ! $APP_NAME =~ $VALIDATION_PATTERN ]]; then
 		echo "app name is invalid: please note that the only alphanumeric characters and '-' are supported"
 		exit 1
