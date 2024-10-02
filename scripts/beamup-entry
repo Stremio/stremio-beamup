@@ -17,7 +17,7 @@ is_user_banned () {
         exit 1
     fi
 
-    BAN_LIST="ban_list.txt"
+    BAN_LIST="/etc/beamup/ban_list.txt"
 
 	# if ban list doesn't exist, carry on with the rest of the code
     if [ ! -f "$BAN_LIST" ]; then
