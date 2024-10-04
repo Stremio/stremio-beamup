@@ -33,9 +33,15 @@
         dest: /usr/local/bin/
         mode: 0755
 
-    - name: Install the beamup scripts [2/2]
+    - name: Install the beamup scripts [2/3]
       copy:
         src: ../../scripts/beamup-sync-keys
+        dest: /usr/local/bin/
+        mode: 0755
+
+    - name: Install the beamup scripts [3/3]
+      copy:
+        src: ../../scripts/beamup-ban-user
         dest: /usr/local/bin/
         mode: 0755
 
