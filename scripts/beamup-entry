@@ -9,34 +9,44 @@ set -e
 # if we don't do this, dokku just executes that...
 unset SSH_ORIGINAL_COMMAND
 
+send_git_error() {
+    local error_message="$1"
+    # Prefix the error message with "ERR "
+    local payload="ERR $error_message"
+    # Calculate total length (4 bytes for the header + payload + newline)
+    local length=$((4 + ${#payload} + 1))
+    # Convert length to a 4-character hex string
+    printf "%04x%s\n" "$length" "$payload"
+}
+
 is_user_banned () {
-	#https://github.com/Stremio/stremio-tasks/issues/271
-	#echo "Checking if $GITHUB_USER_HASHED is banned"
+        #https://github.com/Stremio/stremio-tasks/issues/271
+        #echo "Checking if $GITHUB_USER_HASHED is banned"
     if [ -z "$GITHUB_USER_HASHED" ]; then
-        echo "No GITHUB_USER_HASHED: unauthorized"
+        send_git_error "No GITHUB_USER_HASHED: unauthorized"
         exit 1
     fi
 
     BAN_LIST="/etc/beamup/ban_list.txt"
 
-	# if ban list doesn't exist, carry on with the rest of the code
+        # if ban list doesn't exist, carry on with the rest of the code
     if [ ! -f "$BAN_LIST" ]; then
         return
     fi
 
-	# if user is banned exit
+        # if user is banned exit
     if grep -q "$GITHUB_USER_HASHED" "$BAN_LIST"; then
-        echo "User is banned"
+        send_git_error "User is banned"
         exit 1
     fi
 }
 
 if [ "$1" = "sync-github-keys" ];
 then
-	GITHUB_USER_HASHED=$( echo $2 | shasum -a 256 | cut -c1-12 )
-	is_user_banned
-	beamup-sync-keys "$HOME/.ssh/authorized_keys" "$2" "$GITHUB_USER_HASHED" && echo "Successfully authorized GitHub user $2"
-	exit 0
+        GITHUB_USER_HASHED=$( echo $2 | shasum -a 256 | cut -c1-12 )
+        is_user_banned
+        beamup-sync-keys "$HOME/.ssh/authorized_keys" "$2" "$GITHUB_USER_HASHED" && echo "Successfully authorized GitHub user $2"
+        exit 0
 fi
 
 GITHUB_USER_HASHED=`echo $GITHUB_USER | awk '{print tolower($0)}'`
@@ -44,37 +54,46 @@ is_user_banned
 
 if [ -z "$GITHUB_USER" ]
 then
-	echo "No GITHUB_USER: unauthorized"
-	exit 1
+        send_git_error "No GITHUB_USER: unauthorized"
+        exit 1
 fi
 
 if [ "$1" = "git-receive-pack" ] || [ "$1" = "config:set" ] || [ "$1" = "config:get" ] || [ "$1" = "logs" ];
 then
-	# NOTE: this is safe because GitHub usernames cannot have `-` in them
-	APP_NAME="$(echo "$2" | tr '/' '-' | tr -d '"' | tr -d \')"
-	VALIDATION_PATTERN="^[a-zA-Z0-9-]*$"
-	if [[ ! $APP_NAME =~ $VALIDATION_PATTERN ]]; then
-		echo "app name is invalid: please note that the only alphanumeric characters and '-' are supported"
-		exit 1
-	fi
-	if [[ ! -d $APP_NAME ]] && [[ `echo "$GITHUB_USER_HASHED"-* | wc -w` -gt 20 ]]
-	then
-		echo "addons per user limit reached"
-		exit 1
-	fi
+        # Check app name
+        # NOTE: this is safe because GitHub usernames cannot have `-` in them
+        APP_NAME="$(echo "$2" | tr '/' '-' | tr -d '"' | tr -d \')"
+        VALIDATION_PATTERN="^[a-zA-Z0-9-]*$"
+        echo "INFO: Validating app name..." >&2
+        if [[ ! $APP_NAME =~ $VALIDATION_PATTERN ]]; then
+                send_git_error "app name is invalid: please note that the only alphanumeric characters and '-' are supported"
+                exit 1
+        fi
+        echo "INFO: App name is OK" >&2
+
+        # Validate number of addons
+        echo "INFO: Validating number of addons per user..." >&2
+        if [[ ! -d $APP_NAME ]] && [[ `echo "$GITHUB_USER_HASHED"-* | wc -w` -gt 20 ]]
+        then
+                send_git_error "addons per user limit reached"
+                exit 1
+        fi
+        echo "INFO: Number of addons is OK" >&2
+
         if [ "$1" = "logs" ];
         then
-		case "$APP_NAME" in
-			${GITHUB_USER_HASHED}-*) ssh -T -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0 $1 $APP_NAME;;
-			*)  exit 1 ;;
-		esac
-	else
-		case "$APP_NAME" in
-			${GITHUB_USER_HASHED}-*) dokku $1 $APP_NAME "$3";;
-			*)  exit 1 ;;
-		esac
-	fi
+                case "$APP_NAME" in
+                        ${GITHUB_USER_HASHED}-*) ssh -T -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0 $1 $APP_NAME;;
+                        *)  exit 1 ;;
+                esac
+        else
+                case "$APP_NAME" in
+                        ${GITHUB_USER_HASHED}-*) dokku $1 $APP_NAME "$3";;
+                        *)  exit 1 ;;
+                esac
+        fi
+        echo "INFO: command finished succesfully"
 else
-	echo "unsupported command"
-	exit 1
+        send_git_error "unsupported command"
+        exit 1
 fi
