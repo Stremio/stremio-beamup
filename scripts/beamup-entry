@@ -95,7 +95,7 @@ then
                         *)  exit 1 ;;
                 esac
         fi
-        echo "INFO: command finished succesfully"
+        echo "INFO: command finished succesfully" >&2
 else
         send_git_error "unsupported command"
         exit 1
