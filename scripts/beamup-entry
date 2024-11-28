@@ -2,6 +2,9 @@
 
 set -e
 
+#vars
+MAX_ADDONS_ALLOWED_PER_USER=20
+
 ###
 # Commands
 ###
@@ -73,7 +76,7 @@ then
 
         # Validate number of addons
         echo "INFO: Validating number of addons per user..." >&2
-        if [[ ! -d $APP_NAME ]] && [[ `echo "$GITHUB_USER_HASHED"-* | wc -w` -gt 20 ]]
+        if [[ ! -d $APP_NAME ]] && [[ `echo "$GITHUB_USER_HASHED"-* | wc -w` -ge $MAX_ADDONS_ALLOWED_PER_USER ]]
         then
                 send_git_error "addons per user limit reached"
                 exit 1
