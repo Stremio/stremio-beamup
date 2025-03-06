@@ -5,6 +5,9 @@ set -e
 #vars
 MAX_ADDONS_ALLOWED_PER_USER=20
 
+#LOG_FILE="/var/log/beamup-entry.log"
+#exec > >(tee -a "$LOG_FILE") 2>&1
+
 ###
 # Commands
 ###
@@ -44,6 +47,34 @@ is_user_banned () {
     fi
 }
 
+sanitize_addon_name() {
+    local raw_name="$1"
+
+    # Ensure input is not empty
+    if [[ -z "$raw_name" ]]; then
+        echo "Error: Addon name cannot be empty." >&2
+        exit 1
+    fi
+
+    # Ensure there's exactly one slash
+    if [[ $(grep -o "/" <<< "$raw_name" | wc -l) -ne 1 ]]; then
+        echo "Error: Addon name must contain exactly one slash." >&2
+        exit 1
+    fi
+
+    # Replace only the first occurrence of "/" with "-"
+    local sanitized_name="${raw_name/\//-}"
+
+    # Strict validation: Only allow letters, numbers, underscores, and dashes
+    if [[ ! "$sanitized_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+        echo "Error: Invalid addon name after sanitization: $sanitized_name" >&2
+        exit 1
+    fi
+
+    # Final output is safely formatted to prevent accidental execution
+    printf "%q\n" "$sanitized_name"
+}
+
 if [ "$1" = "sync-github-keys" ];
 then
         GITHUB_USER_HASHED=$( echo $2 | shasum -a 256 | cut -c1-12 )
@@ -61,7 +92,7 @@ then
         exit 1
 fi
 
-if [ "$1" = "git-receive-pack" ] || [ "$1" = "config:set" ] || [ "$1" = "config:get" ] || [ "$1" = "logs" ];
+if [ "$1" = "git-receive-pack" ] || [ "$1" = "config:set" ] || [ "$1" = "config:get" ] || [ "$1" = "logs" ] || [ "$1" = "delete-addon" ];
 then
         # Check app name
         # NOTE: this is safe because GitHub usernames cannot have `-` in them
@@ -74,11 +105,41 @@ then
         fi
         echo "INFO: App name is OK" >&2
 
+        if [ "$1" = "delete-addon" ]; then
+            ADDON_NAME=$(sanitize_addon_name "$2")
+
+            # Ensure addon name is not empty before calling delete-addon script
+            if [[ -z "$ADDON_NAME" ]]; then
+                send_git_error "ERROR: Addon name is missing in beamup-entry."
+                exit 1
+            fi
+
+            if [[ "$ADDON_NAME" =~ ^(all|dokku|root|admin|.*\.\..*)$ ]]; then
+                send_git_error "ERROR: Invalid addon name: $ADDON_NAME. Aborting to prevent system damage."
+                exit 1
+            fi
+
+            echo "INFO: [$USER] Calling  addon deletion script for $ADDON_NAME at $(date)" >&2
+            sync && echo "" #To print all echo before the following script logs
+
+            /usr/local/bin/beamup-delete-addon.sh --force "$ADDON_NAME" 2>&1
+            EXIT_CODE=${PIPESTATUS[0]}  # Capture the exit code of delete-addon.sh
+
+            if [ "$EXIT_CODE" -eq 0 ]; then
+                echo "INFO: Successfully deleted addon $ADDON_NAME" >&2
+            else
+                send_git_error "ERROR: Addon deletion failed for $ADDON_NAME"
+            fi
+
+            exit "$EXIT_CODE"
+
+        fi
+
         # Validate number of addons
         echo "INFO: Validating number of addons per user..." >&2
         if [[ ! -d $APP_NAME ]] && [[ `echo "$GITHUB_USER_HASHED"-* | wc -w` -ge $MAX_ADDONS_ALLOWED_PER_USER ]]
         then
-                send_git_error "addons per user limit reached"
+                send_git_error "Error: addons per user limit reached"
                 exit 1
         fi
         echo "INFO: Number of addons is OK" >&2
