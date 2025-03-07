@@ -47,6 +47,13 @@
         update_cache: yes
         cache_valid_time: 3600
 
+    - name: apt | Install logrotate
+      ansible.builtin.apt:
+        name: logrotate
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
      # Install sysstat for sar reporting
     - name: Install sysstat
       apt:

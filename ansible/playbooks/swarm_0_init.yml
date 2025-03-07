@@ -1,6 +1,5 @@
 - hosts: swarm_0
   tasks:
-    #community.docker.docker_swarm -a 'state=present subnet_size=16 advertise_addr=ens4'
     - name: docker_swarm | Init docker swarm with custom settings
       community.docker.docker_swarm:
         subnet_size: 16

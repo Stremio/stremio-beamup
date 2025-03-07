@@ -1,8 +1,14 @@
 collections:
   #  - name: ansible.posix
   #    version: "~1.5.4"
+  - name: ansible.posix
+    version: ">=1.5.4,<2.0.0"
   - name: cloud.terraform
     version: ">=1.0.0,<2.0.0"
+  - name: community.docker
+    version: ">=3.12.1,<4.0.0"
+  - name: community.general
+    version: ">=9.4.0,<10.0.0"
 
 roles:
   - name: geerlingguy.swap
