@@ -120,10 +120,10 @@ then
             fi
 
             echo "INFO: [$USER] Calling  addon deletion script for $ADDON_NAME at $(date)" >&2
-            sync && echo "" #To print all echo before the following script logs
+            echo "" >&2  # Forces stdout to flush
 
-            /usr/local/bin/beamup-delete-addon.sh --force "$ADDON_NAME" 2>&1
-            EXIT_CODE=${PIPESTATUS[0]}  # Capture the exit code of delete-addon.sh
+            /usr/local/bin/beamup-delete-addon --force "$ADDON_NAME" 2>&1
+            EXIT_CODE=${PIPESTATUS[0]}  # Capture the exit code of beamup-delete-addon
 
             if [ "$EXIT_CODE" -eq 0 ]; then
                 echo "INFO: Successfully deleted addon $ADDON_NAME" >&2
