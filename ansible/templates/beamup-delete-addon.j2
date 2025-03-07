@@ -75,7 +75,7 @@ fi
 # Store the remaining argument as the addon name
 ADDON_NAME="$1"
 
-echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] beamup-delete-addon: Starting addon removal process for '$ADDON_NAME'" | tee -a "$LOG_FILE"
+echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] beamup-delete-addon: Starting addon removal process for '$ADDON_NAME'"
 
 # Validate the addon name again
 if [[ -z "$ADDON_NAME" ]]; then
@@ -325,4 +325,4 @@ verification_process
 unset CLOUDFLARE_API_TOKEN=""
 unset DOKKU_SSH_PRIVATE_KEY=""
 
-echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] beamup-delete-addon: Addon removal process completed successfully for '$ADDON_NAME'" | tee -a "$LOG_FILE"
+echo "$(date '+%Y-%m-%d %H:%M:%S') [INFO] beamup-delete-addon: Addon removal process completed successfully for '$ADDON_NAME'"
