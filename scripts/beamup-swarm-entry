@@ -13,8 +13,8 @@ case "$1" in
         sync)
                 /home/beamup/beamup-sync-swarm.sh
                 ;;
-        active-nodes)
-                docker node ls | grep -i Active
+        swarm-nodes)
+                docker node ls
                 ;;
         server-stats)
                 server-stats
