@@ -143,15 +143,7 @@ function getContainersUsage() {
                 resolve('unknown');
             }
             const containers = stdout.trim().split('\n').map(line => JSON.parse(line));
-            const usage = containers.map(container => ({
-                name: container.Name,
-                cpu: parseFloat(container.CPUPerc),
-                mem: parseFloat(container.MemPerc),
-                netIO: container.NetIO,
-                blockIO: container.BlockIO,
-                pids: parseInt(container.PIDs)
-            }));
-            resolve({ containers: usage });
+            resolve({ containers });
         });
     });
 }
