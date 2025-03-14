@@ -151,6 +151,30 @@ function getContainersUsage() {
     });
 }
 
+function getContainersSizes(containers) {
+    return new Promise((resolve) => {
+        exec('docker ps -s --format "{{json .}}"', (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error executing command: ${error}`);
+                resolve('unknown');
+            }
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+                resolve('unknown');
+            }
+            const sizes = stdout.trim().split('\n').map(line => JSON.parse(line))
+            
+            sizes.forEach(sizeInfo => {
+                const containerStats = containers.find(container => container.Name === sizeInfo.Names.split('.')[0].replace('beamup_', ''));
+                if (containerStats) {
+                    containerStats.Size = sizeInfo.Size;
+                }
+            });
+            resolve(containers);
+        });
+    });
+}
+
 const getServerUsage = () => {
     return new Promise(async (resolve) => {
         const stats = {};
@@ -158,7 +182,7 @@ const getServerUsage = () => {
             getMemoryUsage(),
             getCPUUsage(),
             getHddUsage(),
-            getContainersUsage()
+            getContainersUsage().then(getContainersSizes)
         ]).then((results) => {
             results.forEach((result) => {
                 if (result.status === 'fulfilled') {
