@@ -142,7 +142,10 @@ function getContainersUsage() {
                 console.error(`stderr: ${stderr}`);
                 resolve('unknown');
             }
-            const containers = stdout.trim().split('\n').map(line => JSON.parse(line));
+            const containers = stdout.trim().split('\n').map(line => JSON.parse(line)).map(container => {
+                container.Name = container.Name.split('.')[0].replace('beamup_', '');
+                return container
+            });
             resolve({ containers });
         });
     });
