@@ -28,9 +28,6 @@ case "$1" in
         project-update)
                 docker service update --force beamup_"$2"
                 ;;
-        projects-stats)
-                docker stats --no-stream
-                ;;
         *)
                 echo "Invalid command"
                 exit 1
