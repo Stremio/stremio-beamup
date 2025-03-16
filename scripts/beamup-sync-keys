@@ -6,12 +6,17 @@ const writeFile = promisify(fs.writeFile.bind(fs))
 const readFile = promisify(fs.readFile.bind(fs))
 const httpsGet = args => new Promise((resolve, reject) => https.get(args, resolve).on('error', reject))
 
-const [AUTH_KEYS_PATH, GITHUB_USER_RAW] = process.argv.slice(2)
+const [AUTH_KEYS_PATH, GITHUB_USER_RAW, GITHUB_USER_HASHED] = process.argv.slice(2)
 if (!(AUTH_KEYS_PATH && GITHUB_USER_RAW)) {
 	console.error(`Usage: beamup-sync-keys <path to authorized_keys> <GitHub username>`)
 	process.exit(1)
 }
 const GITHUB_USER = GITHUB_USER_RAW.toLowerCase()
+
+if (isBanned(GITHUB_USER)) {
+	console.error(`GitHub user ${GITHUB_USER} is banned`)
+	process.exit(1)
+}
 
 async function fetchKeys(githubUser) {
 	const res = await httpsGet(`https://github.com/${githubUser}.keys`)
@@ -30,7 +35,7 @@ async function getNewAuthKeysContent() {
 		readFile(AUTH_KEYS_PATH),
 		fetchKeys(GITHUB_USER)
 	])
-	const commandStr = `command="GITHUB_USER='${GITHUB_USER}' beamup-entry $SSH_ORIGINAL_COMMAND"`
+	const commandStr = `command="GITHUB_USER='${GITHUB_USER_HASHED}' beamup-entry $SSH_ORIGINAL_COMMAND"`
 	const minusOldKeys = content.toString().split('\n').filter(x => !x.startsWith(commandStr) && x.trim())
 	const newKeys = keys.split('\n').filter(x => x).map(key => `${commandStr},restrict ${key}`)
 	return minusOldKeys.concat(newKeys).join('\n') + '\n'
@@ -43,3 +48,13 @@ getNewAuthKeysContent()
 		console.error(e)
 		process.exit(2)
 	})
+
+function isBanned(githubUser) {
+	try {
+		const users = fs.readFileSync(banList, 'utf8');
+		return users.toString().split('\n').includes(githubUser);
+	} catch (err) {
+		//if the banlist file doesn't exist
+		return false;
+	}
+}

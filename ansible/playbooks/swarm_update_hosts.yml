@@ -1,0 +1,10 @@
+- hosts: all
+  become: yes
+  tasks:
+    - name: Add host entries to /etc/hosts for swarm nodes
+      lineinfile:
+        path: /etc/hosts
+        line: "{{ hostvars[item].ansible_default_ipv4.address }} {{ hostvars[item].hostname }}"
+        state: present
+      with_items: "{{ groups['swarm'] }}"
+      when: hostvars[item].hostname is defined

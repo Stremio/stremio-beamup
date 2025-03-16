@@ -5,4 +5,19 @@
       docker_apt_ignore_key_error: False
       docker_service_state: started
       docker_install_compose: true
-
+      docker_daemon_options:
+        log-driver: "json-file"
+        log-opts:
+          max-size: "20m"
+          max-file: "5"
+        dns:
+          - "1.1.1.1"
+          - "8.8.8.8"
+        default-ulimits:
+          memlock:
+            Name: "memlock"
+            Hard: 16777216
+            Soft: 8388608
+    - role: geerlingguy.pip
+      pip_install_packages:
+        - name: docker

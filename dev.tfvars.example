@@ -1,0 +1,12 @@
+# dev.tfvars
+deployment_environment = "development"
+domain                 = "beamup.dev"
+swarm_nodes            = "3" #It's been tested with 1 and 3 nodes
+region                 = "eu_nord_1"
+deployer_plan_slug     = "cloud_vds_2" # ID 718
+swarm_plan_slug        = "cloud_vps_6" # ID 659
+
+# user_password_hash is Required
+# The password hash can be generated with `mkpasswd --method=sha-512`
+# https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#how-do-i-generate-encrypted-passwords-for-the-user-module
+#user_password_hash = "$6$pbhWc9xT8h6aAZQH$IatvugXNCO6rCuf8zkDZtYrl0r.kAw8HwoVCy7hQSOHWACM.v1QWtoko6lOQi2S1op87ybnwSKXgWincsNB481" # Example with password: ChangeMeOrDie!

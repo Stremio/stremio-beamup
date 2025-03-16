@@ -12,6 +12,7 @@
               job: "docker system prune -f --all"
               minute: 30
               hour: 4
+              weekday: "2,5"
         - file: docker-registry-prune
           user: root
           environment:
@@ -21,3 +22,4 @@
               job: "ID=`docker ps -q -f name=beamup_control_registry` && echo Garbage collect ${ID} && docker exec -i ${ID} bin/registry garbage-collect /etc/docker/registry/config.yml -m"
               minute: 30
               hour: 5
+              weekday: "2,5"

@@ -9,10 +9,16 @@
     - name: Run the deployer setup script
       shell: 'DOMAIN={{ domain }} /usr/local/bin/beamup-setup-deployer'
 
-    - name: Copy the beamup dokku plugin
+    - name: Copy the dokku beamup plugin structure
       copy:
         src: ../../dokku-plugins/beamup-trigger-swarm-sync
         dest: /var/lib/dokku/plugins/available
+        mode: 0755
+
+    - name: Generate the dokku beamup plugin post-deploy script
+      template:
+        src: ../templates/beamup-trigger-swarm-sync/post-deploy.j2
+        dest: /var/lib/dokku/plugins/available/beamup-trigger-swarm-sync/post-deploy
         mode: 0755
 
     - name: Enable the beamup dokku plugin
@@ -27,10 +33,22 @@
         dest: /usr/local/bin/
         mode: 0755
 
-    - name: Install the beamup scripts [2/2]
+    - name: Install the beamup scripts [2/3]
       copy:
         src: ../../scripts/beamup-sync-keys
         dest: /usr/local/bin/
+        mode: 0755
+
+    - name: Install the beamup scripts [3/3]
+      copy:
+        src: ../../scripts/beamup-ban-user
+        dest: /usr/local/bin/
+        mode: 0755
+
+    - name: template | Generate bash script beamup-delete-addon
+      template:
+        src: ../templates/beamup-delete-addon.j2
+        dest: /usr/local/bin/beamup-delete-addon
         mode: 0755
 
     - name: Upload deployer SSH swarm key for user dokku

@@ -5,6 +5,7 @@
         chain: INPUT
         ctstate: ESTABLISHED,RELATED
         jump: ACCEPT
+      notify: Save iptables rules
     
     - name: Allow ssh
       iptables:
@@ -15,6 +16,7 @@
         syn: match
         jump: ACCEPT
         comment: Accept new SSH connections
+      notify: Save iptables rules
 
     - name: Allow plain HTTP
       iptables:
@@ -25,6 +27,7 @@
         syn: match
         jump: ACCEPT
         comment: Accept new plain HTTP connections
+      notify: Save iptables rules
 
     - name: Allow HTTPS
       iptables:
@@ -35,6 +38,7 @@
         syn: match
         jump: ACCEPT
         comment: Accept new HTTPS connections
+      notify: Save iptables rules
 
     - name: Allow SSH tunnels on port 5000 /destination port/
       iptables:
@@ -45,6 +49,7 @@
         syn: match
         jump: ACCEPT
         comment: Allow SSH tunel connections on dst port 5000
+      notify: Save iptables rules
 
     - name: Allow SSH tunnels on port 5000 /source port/
       iptables:
@@ -55,11 +60,13 @@
         syn: match
         jump: ACCEPT
         comment: Allow SSH tunel connections on src port 5000
+      notify: Save iptables rules
 
     - name: Set the policy for the INPUT chain to DROP
       iptables:
         chain: INPUT
         policy: DROP
+      notify: Save iptables rules
 
     - name: Allow Docker control
       iptables:
@@ -70,6 +77,7 @@
         syn: match
         jump: ACCEPT
         comment: Accept new plain Docker connections
+      notify: Save iptables rules
 
     - name: Allow Docker
       iptables:
@@ -80,6 +88,7 @@
         syn: match
         jump: ACCEPT
         comment: Accept new Docker connections
+      notify: Save iptables rules
 
     - name: Allow Docker ports
       iptables:
@@ -89,6 +98,7 @@
         ctstate: NEW
         jump: ACCEPT
         comment: Accept new Docker connections
+      notify: Save iptables rules
 
     - name: Allow Docker ports
       iptables:
@@ -98,6 +108,7 @@
         ctstate: NEW
         jump: ACCEPT
         comment: Accept new Docker ports connections
+      notify: Save iptables rules
 
     - name: Allow ICMP echo/ping
       iptables:
@@ -105,6 +116,43 @@
         protocol: icmp
         jump: ACCEPT
         comment: Accept ICMP echo/pings
+      notify: Save iptables rules
 
-    - name: save iptables
-      shell: 'iptables-save > /etc/iptables/rules.v4'
+
+    #To disable access to registry from outside (Internet) to avoid https://dreher.in/blog/unprotected-container-registries
+    #
+    - name: Debug print the first network interface
+      ansible.builtin.debug:
+        msg: "The first network interface is {{ first_interface }}"
+
+    - name: Allow localhost access to port 5000
+      ansible.builtin.iptables:
+        chain: DOCKER-USER
+        protocol: tcp
+        destination_port: 5000
+        source: 127.0.0.1
+        jump: ACCEPT
+        action: insert
+        rule_num: 1
+      notify: Save iptables rules
+
+    - name: Drop external access to port 5000 on eth0
+      ansible.builtin.iptables:
+        chain: DOCKER-USER
+        protocol: tcp
+        destination_port: 5000
+        in_interface: "{{ first_interface }}"
+        jump: DROP
+        action: insert
+        rule_num: 2
+      notify: Save iptables rules
+
+  handlers:
+    - name: Save iptables rules
+      ansible.builtin.command:
+        cmd: netfilter-persistent save
+      become: true
+      when: ansible_os_family == "Debian"
+
+#    - name: save iptables
+#      shell: 'iptables-save > /etc/iptables/rules.v4'
