@@ -92,7 +92,7 @@ function getMemoryUsage() {
         exec('free -m', (error, stdout, stderr) => {
             if (error) {
                 console.error(`Error executing command: ${error}`);
-                resolve('unknown');
+                return resolve();
             }
             const lines = stdout.split('\n');
             const header = lines[0].split(/\s+/);
@@ -132,74 +132,56 @@ function getMemoryUsage() {
 }
 
 function getContainersUsage() {
+    let containers = [];
     return new Promise((resolve) => {
         exec('docker stats --no-stream --format "{{json .}}"', (error, stdout, stderr) => {
             if (error) {
                 console.error(`Error executing command: ${error}`);
-                resolve({ containers: [] }); // Return empty array
-                return;
+                return resolve({ containers });
             }
             if (stderr) {
                 console.error(`stderr: ${stderr}`);
-                resolve({ containers: [] }); // Return empty array
-                return;
+                return resolve({ containers });
             }
-
-            // Check if output is empty before parsing
-            if (!stdout.trim()) {
-                resolve({ containers: [] }); // Return empty array if no containers
-                return;
-            }
-
             try {
-                const containers = stdout.trim().split('\n').map(line => JSON.parse(line)).map(container => {
+                containers = stdout.trim().split('\n').map(line => JSON.parse(line)).map(container => {
                     container.Name = container.Name.split('.')[0].replace('beamup_', '');
                     return container;
                 });
-                resolve({ containers });
-            } catch (parseError) {
-                console.error(`JSON parse error: ${parseError}`);
-                resolve({ containers: [] }); // Return empty array on parse failure
             }
+            catch (e) {
+                console.error(e);
+            }
+            resolve({ containers });
         });
     });
 }
 
-function getContainersSizes({containers}) {
+function getContainersSizes({ containers }) {
+    let sizes = [];
     return new Promise((resolve) => {
         exec('docker ps -a -s --format "json"', (error, stdout, stderr) => {
             if (error) {
                 console.error(`Error executing command: ${error}`);
-                resolve({ containers }); // Return containers as is
-                return;
+                return resolve({ containers });
             }
             if (stderr) {
                 console.error(`stderr: ${stderr}`);
-                resolve({ containers }); // Return containers as is
-                return;
+                return resolve({ containers });
             }
-
-            // Check if output is empty before parsing
-            if (!stdout.trim()) {
-                resolve({ containers }); // No sizes available, return original containers
-                return;
-            }
-
             try {
-                const sizes = stdout.trim().split('\n').map(line => JSON.parse(line));
-
-                sizes.forEach(sizeInfo => {
-                    const containerStats = containers.find(container => container.Name === sizeInfo.Names.split('.')[0].replace('beamup_', ''));
-                    if (containerStats) {
-                        containerStats.Size = sizeInfo.Size;
-                    }
-                });
-
-                resolve({ containers });
-            } catch (parseError) {
-                console.error(`JSON parse error: ${parseError}`);
-                resolve({ containers }); // Return original containers on parse failure
+                sizes = stdout.trim().split('\n').map(line => JSON.parse(line))
             }
+            catch (e) {
+                console.error(e);
+            }
+            sizes.forEach(sizeInfo => {
+                const containerStats = containers.find(container => container.Name === sizeInfo.Names.split('.')[0].replace('beamup_', ''));
+                if (containerStats) {
+                    containerStats.Size = sizeInfo.Size;
+                }
+            });
+            resolve({ containers });
         });
     });
 }
@@ -221,7 +203,7 @@ const getServerUsage = () => {
             resolve(stats);
         }).catch((err) => {
             console.error(err);
-            resolve(results);
+            resolve(stats);
         });
     })
 }
