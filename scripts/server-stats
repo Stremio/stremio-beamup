@@ -1,0 +1,215 @@
+#!/usr/bin/env nodejs
+
+const { exec } = require('child_process');
+const _os = require('os');
+
+function getCPUInfo(callback) {
+    const cpus = _os.cpus();
+
+    let user = 0;
+    let nice = 0;
+    let sys = 0;
+    let idle = 0;
+    let irq = 0;
+    let total = 0;
+
+    for (const cpu in cpus) {
+        if (!cpus.hasOwnProperty(cpu)) continue;
+        user += cpus[cpu].times.user;
+        nice += cpus[cpu].times.nice;
+        sys += cpus[cpu].times.sys;
+        irq += cpus[cpu].times.irq;
+        idle += cpus[cpu].times.idle;
+    }
+
+    total = user + nice + sys + idle + irq;
+
+    return {
+        'idle': idle,
+        'total': total
+    };
+}
+
+function getCPUUsage() {
+    return new Promise((resolve) => {
+        const stats1 = getCPUInfo();
+        const startIdle = stats1.idle;
+        const startTotal = stats1.total;
+
+        setTimeout(function () {
+            const stats2 = getCPUInfo();
+            const endIdle = stats2.idle;
+            const endTotal = stats2.total;
+
+            const idle = endIdle - startIdle;
+            const total = endTotal - startTotal;
+            const perc = idle / total;
+
+            resolve({ cpu: (1 - perc) });
+        }, 1000);
+    });
+}
+
+function getHddUsage() {
+    return new Promise((resolve) => {
+        exec(
+            `df -k`,
+            (err, stdout, stderr) => {
+
+                if (err) {
+                    console.log(`err: ${err} ${err.message} ${err.toString()}`)
+                    return resolve()
+                }
+
+                if (stderr) {
+                    console.log('stderr')
+                    console.log(stderr)
+                    return resolve()
+                }
+
+                if (stdout) {
+
+                    let hddUsagePerc = 0
+
+                    stdout.split(String.fromCharCode(10)).find((line, count) => {
+                        if (count && line) { // ignore first line
+                            const parts = line.replace(/[ \t]{2,}/g, '||').replace(/ /g, '||').split('||')
+                            if (parts[5] === '/') {
+                                hddUsagePerc = parseInt(parts[4]) / 100
+                                return true;
+                            }
+                        }
+                    })
+
+                    resolve({ hdd: hddUsagePerc })
+                }
+            })
+    })
+}
+
+function getMemoryUsage() {
+    return new Promise((resolve) => {
+        exec('free -m', (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error executing command: ${error}`);
+                return resolve();
+            }
+            const lines = stdout.split('\n');
+            const header = lines[0].split(/\s+/);
+            const valuesMem = lines[1].split(/\s+/).slice(1);
+
+            if (header.length > valuesMem.length) {
+                header.shift();
+            }
+
+            const memory = {};
+
+            for (let i = 0; i < header.length; i++) {
+                memory[header[i]] = parseInt(valuesMem[i]);
+            }
+
+            const valuesSwap = lines[2].split(/\s+/).slice(1);
+
+            const swap = {};
+            for (let i = 0; i < header.length; i++) {
+                swap[header[i]] = parseInt(valuesSwap[i]);
+            }
+
+            // interpret memory usage
+            const totalMemory = memory['total'];
+            const usedMemory = memory['used'];
+
+            const totalSwapMem = swap['total'];
+            const usedSwapMem = swap['used'];
+
+            resolve({
+                mem: usedMemory / totalMemory,
+                swap: usedSwapMem / totalSwapMem,
+            });
+
+        });
+    })
+}
+
+function getContainersUsage() {
+    let containers = [];
+    return new Promise((resolve) => {
+        exec('docker stats --no-stream --format "{{json .}}"', (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error executing command: ${error}`);
+                return resolve({ containers });
+            }
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+                return resolve({ containers });
+            }
+            try {
+                containers = stdout.trim().split('\n').map(line => JSON.parse(line)).map(container => {
+                    container.Name = container.Name.split('.')[0].replace('beamup_', '');
+                    return container;
+                });
+            }
+            catch (e) {
+                console.error(e);
+            }
+            resolve({ containers });
+        });
+    });
+}
+
+function getContainersSizes({ containers }) {
+    let sizes = [];
+    return new Promise((resolve) => {
+        exec('docker ps -a -s --format "json"', (error, stdout, stderr) => {
+            if (error) {
+                console.error(`Error executing command: ${error}`);
+                return resolve({ containers });
+            }
+            if (stderr) {
+                console.error(`stderr: ${stderr}`);
+                return resolve({ containers });
+            }
+            try {
+                sizes = stdout.trim().split('\n').map(line => JSON.parse(line))
+            }
+            catch (e) {
+                console.error(e);
+            }
+            sizes.forEach(sizeInfo => {
+                const containerStats = containers.find(container => container.Name === sizeInfo.Names.split('.')[0].replace('beamup_', ''));
+                if (containerStats) {
+                    containerStats.Size = sizeInfo.Size;
+                }
+            });
+            resolve({ containers });
+        });
+    });
+}
+
+const getServerUsage = () => {
+    return new Promise(async (resolve) => {
+        const stats = {};
+        Promise.allSettled([
+            getMemoryUsage(),
+            getCPUUsage(),
+            getHddUsage(),
+            getContainersUsage().then(getContainersSizes)
+        ]).then((results) => {
+            results.forEach((result) => {
+                if (result.status === 'fulfilled') {
+                    Object.assign(stats, result.value);
+                }
+            });
+            resolve(stats);
+        }).catch((err) => {
+            console.error(err);
+            resolve(stats);
+        });
+    })
+}
+
+if (require.main === module) {
+    getServerUsage().then(JSON.stringify).then(console.log).catch(console.error);
+} else {
+    module.exports = { getServerUsage, getMemoryUsage, getCPUUsage, getHddUsage };
+}
