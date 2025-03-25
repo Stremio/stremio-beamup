@@ -5,8 +5,14 @@
         hostname: stremio-beamup-swarm-0
         labels:
           short_name: swarm-0
-    - name: Install the beamup swarm scripts
-      ansible.builtin.copy:
-        src: ../../scripts/beamup-swarm-entry
-        dest: /usr/local/bin/
-        mode: 0755
+            #    This is done for each node now in another script
+            #    - name: Install the beamup swarm scripts [1/2]
+            #      ansible.builtin.copy:
+            #        src: ../../scripts/beamup-swarm-entry
+            #        dest: /usr/local/bin/
+            #        mode: 0755
+            #    - name: Install the beamup swarm scripts [2/2]
+            #      ansible.builtin.copy:
+            #        src: ../../scripts/server-stats
+            #        dest: /usr/local/bin/
+            #        mode: 0755
