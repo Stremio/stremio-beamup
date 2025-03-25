@@ -6,15 +6,30 @@ set -e
 # Commands
 ###
 
-
-if [ "$1" = "logs" ];
-then
-        docker service logs -n 100 -t --no-task-ids --no-resolve beamup_"$2" | awk '{$2=""; print $0}'
-        exit 0
-fi
-
-if [ "$1" = "sync" ]
-then
-        /home/beamup/beamup-sync-swarm.sh
-        exit 0
-fi
+case "$1" in
+        logs)
+                docker service logs -n 100 -t --no-task-ids --no-resolve beamup_"$2" | awk '{$2=""; print $0}'
+                ;;
+        sync)
+                /home/beamup/beamup-sync-swarm.sh
+                ;;
+        swarm-nodes)
+                docker node ls
+                ;;
+        server-stats)
+                server-stats
+                ;;
+        projects)
+                docker service ls
+                ;;
+        project-logs)
+                docker service logs --raw -t beamup_"$2"
+                ;;
+        project-update)
+                docker service update --force beamup_"$2"
+                ;;
+        *)
+                echo "Invalid command"
+                exit 1
+                ;;
+esac
