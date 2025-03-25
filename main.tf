@@ -463,7 +463,7 @@ resource "null_resource" "swarm_ansible_configure_ssh" {
 
 
   provisioner "local-exec" {
-    command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/swarm_update_hosts.yml"
+    command = "ansible-playbook -b -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${path.cwd}/ansible/playbooks/swarm_nodes_setup.yml"
 
     environment = {
       TF_STATE = "./"

@@ -8,3 +8,15 @@
         state: present
       with_items: "{{ groups['swarm'] }}"
       when: hostvars[item].hostname is defined
+
+    - name: Install the beamup swarm scripts [1/2]
+      ansible.builtin.copy:
+        src: ../../scripts/beamup-swarm-entry
+        dest: /usr/local/bin/
+        mode: 0755
+
+    - name: Install the beamup swarm scripts [2/2]
+      ansible.builtin.copy:
+        src: ../../scripts/server-stats
+        dest: /usr/local/bin/
+        mode: 0755
