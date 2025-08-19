@@ -146,9 +146,13 @@ then
 
         if [ "$1" = "logs" ];
         then
+                # Pass all arguments after $2 to be parsed and sanitized later
+                shift 2
+                ARGS="$@"
+
                 case "$APP_NAME" in
-                        ${GITHUB_USER_HASHED}-*) ssh -T -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0 $1 $APP_NAME;;
-                        *)  exit 1 ;;
+                    ${GITHUB_USER_HASHED}-*) ssh -T -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0 $1 $APP_NAME $ARGS;;
+                    *)  exit 1 ;;
                 esac
         else
                 case "$APP_NAME" in

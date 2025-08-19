@@ -8,7 +8,47 @@ set -e
 
 case "$1" in
         logs)
-                docker service logs -n 100 -t --no-task-ids --no-resolve beamup_"$2" | awk '{$2=""; print $0}'
+                for i in "$@"; do
+                  case $i in
+                    -f*|--follow*)
+                      FOLLOW=YES
+                      shift # past argument with no value
+                      ;;
+                    -n=*|--tail=*)
+                      TAIL="${i#*=}"
+                      shift # past argument=value
+                      ;;
+                    -t*|--timestamps*)
+                      TIMESTAMPS=YES
+                      shift
+                      ;;
+                    --since=*)
+                      SINCE="${i#*=}"
+                      shift
+                      ;;
+                    --until=*)
+                      UNTIL="${i#*=}"
+                      shift
+                      ;;
+                    -*|--*)
+                      echo "Unknown option $i"
+                      exit 1
+                      ;;
+                    *)
+                      ;;
+                  esac
+                done
+                PARAM=""
+                if [ -n "$TAIL" ]; then
+                  PARAM="$PARAM --tail=$TAIL"
+                else
+                  PARAM="$PARAM --tail=100"
+                fi
+                [ "$FOLLOW" = "YES" ] && PARAM="$PARAM -f"
+                [ "$TIMESTAMPS" = "YES" ] && PARAM="$PARAM -t"
+                [ -n "$SINCE" ] && PARAM="$PARAM --since=$SINCE"
+                [ -n "$UNTIL" ] && PARAM="$PARAM --until=$UNTIL"
+                docker service logs $PARAM --no-task-ids --no-resolve beamup_"$2" | awk '{$2=""; print $0}'
                 ;;
         sync)
                 /home/beamup/beamup-sync-swarm.sh
