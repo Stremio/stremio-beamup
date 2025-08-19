@@ -150,6 +150,12 @@ then
                 shift 2
                 ARGS="$@"
 
+                # Validate that ARGS only contains allowed characters
+                if [[ "$ARGS" =~ [^a-zA-Z0-9-=\s] ]]; then
+                    send_git_error "Invalid arguments: $ARGS"
+                    exit 1
+                fi
+
                 case "$APP_NAME" in
                     ${GITHUB_USER_HASHED}-*) ssh -T -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0 $1 $APP_NAME $ARGS;;
                     *)  exit 1 ;;
