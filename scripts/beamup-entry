@@ -76,7 +76,7 @@ sanitize_addon_name() {
 }
 
 if [ -z "$SSH_TTY" ] && [ -z "$1" ]; then
-    echo "Hi! You've successfully authenticated, but Beamup does not provide shell access." >&2
+    echo "Hi $GITHUB_USER_HASHED! You've successfully authenticated, but Beamup does not provide shell access." >&2
     exit 0
 fi
 
