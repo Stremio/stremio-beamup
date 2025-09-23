@@ -75,6 +75,11 @@ sanitize_addon_name() {
     printf "%q\n" "$sanitized_name"
 }
 
+if [ -z "$SSH_TTY" ] && [ -z "$1" ]; then
+    echo "Hi! You've successfully authenticated, but Beamup does not provide shell access." >&2
+    exit 0
+fi
+
 if [ "$1" = "sync-github-keys" ];
 then
         GITHUB_USER_HASHED=$( echo $2 | shasum -a 256 | cut -c1-12 )
