@@ -1,0 +1,46 @@
+###############################################
+# dev.tfvars.example
+# Example values for all variables defined in variables.tf
+###############################################
+
+# Path to the private SSH key
+#private_key = "../id_deploy"
+
+# Path to the authorized_keys file
+#public_keys = "../authorized_keys"
+
+# Path to the terraform-inventory
+#terraform_inventory_path = "../inventory.yml"
+
+# Domain name for the deployment
+domain = "beamup.dev"
+
+# Number of swarm nodes to create
+swarm_nodes = 1
+
+# The password for the OS user in SHA512 (Required)
+# Generate with: mkpasswd --method=sha-512
+# https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#how-do-i-generate-encrypted-passwords-for-the-user-module
+#user_password_hash = "$6$example$hashvalue"
+
+# Username for the system user
+username = "beamup"
+
+# The environment this infrastructure should be associated with
+deployment_environment = "development"
+
+# This should be the name of the interface that has the Public IP and allows access to Internet
+first_interface = "enp1s0"
+
+# Libvirt specific variables
+libvirt_uri = "qemu:///system"
+base_image_path = "/var/lib/libvirt/images/debian-12-generic-amd64.qcow2"
+network_name = "default"
+
+deployer_memory = 2048
+deployer_vcpu = 2
+deployer_disk_size = 21474836480  # 20GB
+
+swarm_memory = 4096
+swarm_vcpu = 2
+swarm_disk_size = 32212254720  # 30GB
