@@ -82,7 +82,7 @@ fi
 
 if [ "$1" = "sync-github-keys" ];
 then
-        GITHUB_USER_HASHED=$( echo $2 | shasum -a 256 | cut -c1-12 )
+        GITHUB_USER_HASHED=$( echo "$2" | awk '{print tolower($0)}' | shasum -a 256 | cut -c1-12 )
         is_user_banned
         beamup-sync-keys "$HOME/.ssh/authorized_keys" "$2" "$GITHUB_USER_HASHED" && echo "Successfully authorized GitHub user $2"
         exit 0
