@@ -1,6 +1,18 @@
 
 
 
+## Introduction
+
+This document provides instructions for setting up and deploying the Stremio Beamup project in a local environment. 
+
+It is recommended to run this setup inside an Ubuntu virtual machine with sufficient disk space, CPU, and RAM. This approach allows deployment from any system using any VM software. Please follow the official instructions for your operating system and VM software to create and configure the virtual machine. 
+
+known working envirement, 
+- VM OS: ubuntu-24.04.3-live-server-amd64.iso
+- VM disk: 50 gb
+
+Note that these instructions are focused on deploying the core Stremio Beamup infrastructure itself, not on deploying individual addons to the platform.
+
 ## prerequisites 
 
 - install dependencies
@@ -44,11 +56,3 @@ wget https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericclou
     Make sure to copy and edit the `.tfvars` files from `dev.tfvars.example` if you haven't done so. Fill in the necessary information for your specific environment (either `development`, `production` or other).  
 8. Create a DNS A Record for the deployer's public IP, e.g.: `deployer.beamup.dev`.  
 It can be created in CloudFlare. This DNS can be used with `beamup-cli` to deploy the addons.
-
-
-
-
-
-`sudo nano /etc/libvirt/qemu.conf`
-add `security_driver = "none" `
-`sudo systemctl restart libvirtd`
