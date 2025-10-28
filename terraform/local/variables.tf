@@ -22,6 +22,12 @@ variable "deployer_key" {
   default     = "./../../id_ed25519_deployer_sync"
 }
 
+variable "deployer_tunnel_key" {
+  description = "Path to the deployer tunnel private SSH key"
+  type        = string
+  default     = "./../../id_ed25519_deployer_tunnel"
+}
+
 variable "terraform_inventory_path" {
   description = "The path to the terraform-inventory"
   type        = string

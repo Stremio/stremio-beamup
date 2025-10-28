@@ -49,6 +49,12 @@ variable "deployer_key" {
   default     = "./../../id_ed25519_deployer_sync"
 }
 
+variable "deployer_tunnel_key" {
+  description = "Path to the deployer tunnel private SSH key"
+  type        = string
+  default     = "./../../id_ed25519_deployer_tunnel"
+}
+
 variable "terraform_inventory_path" {
   description = "The path to the terraform-inventory"
   type        = string
@@ -591,7 +597,7 @@ resource "null_resource" "deployer_tunnel_setup" {
   depends_on = [data.template_file.ssh_tunnel_service, null_resource.ansible_swarm_disable_swap]
 
   provisioner "local-exec" {
-    command = "rm -f id_ed25519_deployer_tunnel && rm -f id_ed25519_deployer_tunnel.pub && ssh-keygen -t ed25519 -f id_ed25519_deployer_tunnel -C 'dokku@stremio-addon-deployer' -q -N ''"
+    command = "rm -f ${var.deployer_tunnel_key} && rm -f ${var.deployer_tunnel_key}.pub && ssh-keygen -t ed25519 -f ${var.deployer_tunnel_key} -C 'dokku@stremio-addon-deployer' -q -N ''"
   }
 
   provisioner "local-exec" {
@@ -599,7 +605,7 @@ resource "null_resource" "deployer_tunnel_setup" {
   }
 
   provisioner "local-exec" {
-    command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=id_ed25519_deployer_tunnel.pub dest=/home/${var.username}/.ssh/ mode=0600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm_0"
+    command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=${var.deployer_tunnel_key}.pub dest=/home/${var.username}/.ssh/ mode=0600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm_0"
 
     environment = {
       TF_STATE = "./"
@@ -609,7 +615,7 @@ resource "null_resource" "deployer_tunnel_setup" {
 #TODO
 #Check this resource and specially this next provisioner as it looks like it is not required.
   provisioner "local-exec" {
-    command = "ansible -T 30 -b -u ${var.username} -m shell -a 'echo -n command=\"beamup-sync-and-deploy\",restrict,permitopen=\"localhost:5000\" && cat /home/${var.username}/.ssh/id_ed25519_deployer_tunnel.pub >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm_0"
+    command = "ansible -T 30 -b -u ${var.username} -m shell -a 'echo -n command=\"beamup-sync-and-deploy\",restrict,permitopen=\"localhost:5000\" && cat /home/${var.username}/.ssh/${var.deployer_tunnel_key}.pub >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm_0"
 
     environment = {
       TF_STATE = "./"
