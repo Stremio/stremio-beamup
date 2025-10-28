@@ -134,7 +134,7 @@ resource "null_resource" "deployer_tunnel_setup" {
   }
 
   provisioner "local-exec" {
-    command = format("cat <<\"EOF\" > \"%s\"\n%s\nEOF", "secure-tunnel-swarm.service", data.template_file.ssh_tunnel_service.rendered)
+    command = format("cat <<\"EOF\" > \"%s\"\n%s\nEOF", "../../secure-tunnel-swarm.service", data.template_file.ssh_tunnel_service.rendered)
   }
 
   provisioner "local-exec" {
