@@ -16,6 +16,12 @@ variable "public_keys" {
   default     = "./../../authorized_keys"
 }
 
+variable "deployer_key" {
+  description = "Path to the deployer's private SSH key"
+  type        = string
+  default     = "./../../id_ed25519_deployer_sync"
+}
+
 variable "terraform_inventory_path" {
   description = "The path to the terraform-inventory"
   type        = string

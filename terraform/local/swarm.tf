@@ -225,7 +225,7 @@ resource "null_resource" "swarm_deployer_script" {
   }
 
   provisioner "local-exec" {
-    command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=id_ed25519_deployer_sync.pub dest=/home/${var.username}/.ssh/ mode=0600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm_0"
+    command = "ansible -T 30 -b -u ${var.username} -m copy -a 'src=${var.deployer_key}.pub dest=/home/${var.username}/.ssh/ mode=0600' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm_0"
 
     environment = {
       TF_STATE = "./"
@@ -241,7 +241,7 @@ resource "null_resource" "swarm_deployer_script" {
   }
 
   provisioner "local-exec" {
-    command = format("ansible -T 30 -u ${var.username} -m shell -a 'echo \"command=\\\"beamup-swarm-entry \\$SSH_ORIGINAL_COMMAND\\\",restrict %s\" >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm", file("${var.project_dir}/id_ed25519_deployer_sync.pub"))
+    command = format("ansible -T 30 -u ${var.username} -m shell -a 'echo \"command=\\\"beamup-swarm-entry \\$SSH_ORIGINAL_COMMAND\\\",restrict %s\" >> /home/${var.username}/.ssh/authorized_keys' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm", file("${var.project_dir}/${var.deployer_key}.pub"))
 
     environment = {
       TF_STATE = "./"

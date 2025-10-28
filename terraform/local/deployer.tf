@@ -111,7 +111,7 @@ resource "null_resource" "deployer_setup" {
   # Prepare SSH key for swarm sync
   #
   provisioner "local-exec" {
-    command = "rm -f id_ed25519_deployer_sync && rm -f id_ed25519_deployer_sync.pub && ssh-keygen -t ed25519 -f id_ed25519_deployer_sync -C 'dokku@stremio-addon-deployer' -q -N ''"
+    command = "rm -f ${var.deployer_key} && rm -f ${var.deployer_key}.pub && ssh-keygen -t ed25519 -f ${var.deployer_key} -C 'dokku@stremio-addon-deployer' -q -N ''"
   }
 
   #
