@@ -45,7 +45,6 @@ sudo apt-get install qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils
 
 
 # Adding current user to libvirt
-
 sudo usermod -a -G libvirt $(whoami)
 
 # Setting up default libvirt storage pool
@@ -53,6 +52,13 @@ sudo virsh pool-define-as --name default --type dir --target /var/lib/libvirt/im
 sudo virsh pool-build default
 sudo virsh pool-start default
 sudo virsh pool-autostart default
+
+# Set libvirt security_driver to 'none'
+echo 'Setting libvirt security_driver to "none" in /etc/libvirt/qemu.conf ...'
+sudo sed -i '/^security_driver\s*=\s*\"none\"/d' /etc/libvirt/qemu.conf
+sudo sed -i '/^security_driver/d' /etc/libvirt/qemu.conf
+echo 'security_driver = "none"' | sudo tee -a /etc/libvirt/qemu.conf
+sudo systemctl restart libvirtd
 
 # install ansible dependencies
 
