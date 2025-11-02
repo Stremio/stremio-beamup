@@ -21,6 +21,7 @@ resource "libvirt_domain" "swarm" {
   name   = "stremio-beamup-swarm-${count.index}"
   memory = var.swarm_memory
   vcpu   = var.swarm_vcpu
+  autostart = var.autostart
 
   cloudinit = libvirt_cloudinit_disk.commoninit.id
 

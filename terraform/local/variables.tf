@@ -65,6 +65,12 @@ variable "deployment_environment" {
   default     = "production"
 }
 
+variable "autostart" {
+  description = "Whether to autostart the VM on boot"
+  type        = bool
+  default     = true
+}
+
 variable "first_interface" {
   description = "This should be the name of the interface that has the Public IP and allows access to Internet"
   type        = string

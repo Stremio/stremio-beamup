@@ -11,6 +11,7 @@ resource "libvirt_domain" "deployer" {
   name   = "stremio-addon-deployer"
   memory = var.deployer_memory
   vcpu   = var.deployer_vcpu
+  autostart = var.autostart
 
   cloudinit = libvirt_cloudinit_disk.commoninit.id
 
