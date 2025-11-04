@@ -43,7 +43,7 @@ async function getNewAuthKeysContent() {
 
 getNewAuthKeysContent()
 	.then(content => writeFile(AUTH_KEYS_PATH, content))
-	.then(() => {console.log(`Updated SSH keys for GitHub user ${GITHUB_USER}`)})
+	.then(() => {console.log(`Updated SSH keys for GitHub user ${GITHUB_USER_HASHED}`)})
 	.catch(e => {
 		console.error(`Encountered error, quitting`)
 		console.error(e)
