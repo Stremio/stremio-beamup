@@ -66,7 +66,7 @@ sanitize_addon_name() {
     local sanitized_name="${raw_name/\//-}"
 
     # Strict validation: Only allow letters, numbers, underscores, and dashes
-    if [[ ! "$sanitized_name" =~ ^[a-zA-Z0-9_-]+$ ]]; then
+    if [[ ! "$sanitized_name" =~ ^[a-z0-9_-]+$ ]]; then
         echo "Error: Invalid addon name after sanitization: $sanitized_name" >&2
         exit 1
     fi
@@ -74,6 +74,11 @@ sanitize_addon_name() {
     # Final output is safely formatted to prevent accidental execution
     printf "%q\n" "$sanitized_name"
 }
+
+if [ -z "$SSH_TTY" ] && [ -z "$1" ]; then
+    echo "Hi $GITHUB_USER! You've successfully authenticated, but Beamup does not provide shell access." >&2
+    exit 0
+fi
 
 if [ "$1" = "sync-github-keys" ];
 then
@@ -97,10 +102,10 @@ then
         # Check app name
         # NOTE: this is safe because GitHub usernames cannot have `-` in them
         APP_NAME="$(echo "$2" | tr '/' '-' | tr -d '"' | tr -d \')"
-        VALIDATION_PATTERN="^[a-zA-Z0-9-]*$"
+        VALIDATION_PATTERN="^[a-z0-9-]*$"
         echo "INFO: Validating app name..." >&2
         if [[ ! $APP_NAME =~ $VALIDATION_PATTERN ]]; then
-                send_git_error "app name is invalid: please note that the only alphanumeric characters and '-' are supported"
+                send_git_error "app name is invalid: please note that the only lowercase alphanumeric characters and '-' are supported"
                 exit 1
         fi
         echo "INFO: App name is OK" >&2
