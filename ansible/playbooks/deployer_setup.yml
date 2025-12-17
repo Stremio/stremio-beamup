@@ -45,6 +45,30 @@
         dest: /usr/local/bin/
         mode: 0755
 
+    - name: Install the beamup-sync scripts [1/3]
+      copy:
+        src: ../../scripts/beamup-sync/beamup-sync.sh
+        dest: /usr/local/bin/beamup-sync
+        mode: 0755
+
+    - name: Install the beamup-sync scripts [2/4]
+      copy:
+        src: ../../scripts/beamup-sync/beamup-common.sh
+        dest: /usr/local/lib/beamup/beamup-common
+        mode: 0755
+
+    - name: Install the beamup-sync scripts [3/4]
+      copy:
+        src: ../../scripts/beamup-sync/beamup-backup.sh
+        dest: /usr/local/lib/beamup/beamup-backup
+        mode: 0755
+
+    - name: Install the beamup-sync scripts [4/4]
+      copy:
+        src: ../../scripts/beamup-sync/beamup-restore.sh
+        dest: /usr/local/lib/beamup/beamup-restore
+        mode: 0755
+
     - name: template | Generate bash script beamup-delete-addon
       template:
         src: ../templates/beamup-delete-addon.j2
