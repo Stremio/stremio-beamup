@@ -30,7 +30,7 @@ sleep 10
 docker stack deploy --detach=false --compose-file registry.yaml beamup_control
 sleep 50
 
-beamup-sync-swarm apps.yaml apps.conf
+beamup-sync-swarm apps.yaml apps.conf docker_volumes
 APPS_COUNT=`cat apps.yaml | grep image | wc -l`
 if [ $APPS_COUNT -gt 0 ] ; then
 	docker stack deploy --prune --compose-file apps.yaml beamup
