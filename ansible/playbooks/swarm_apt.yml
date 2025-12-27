@@ -61,6 +61,13 @@
         update_cache: yes
         cache_valid_time: 3600
 
+    - name: apt | Install fuse2fs
+      ansible.builtin.apt:
+        name: fuse2fs
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
     # Install sysstat for sar reporting
     - name: Install sysstat
       apt:
