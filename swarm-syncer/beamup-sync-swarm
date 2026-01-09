@@ -3,13 +3,13 @@
 const fs = require('fs')
 const http = require('http')
 const https = require('https')
-const { execSync, spawn } = require('child_process');
+const { execSync } = require('child_process');
 const request = (http, args) => new Promise((resolve, reject) => http.request(args, resolve).on('error', reject).end(args.body))
 
 const START_PORT = 8000
 const TOTAL_APP_LIMIT = 300
 const REGISTRY_URL = 'http://127.0.0.1:5000'
-const VOLUME_SIZE = 512 // in MB
+const VOLUME_SIZE = '1GB'
 const VOLUME_MOUNT_DIR = `./beamup/volumes`;
 
 // https://docs.docker.com/compose/compose-file/04-version-and-name/#version-top-level-element-obsolete
@@ -39,7 +39,7 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
         ports:
           - '${port}:${port}'
         volumes:
-          - ${VOLUME_MOUNT_DIR}/${appName}:/persistent_data
+          - ${VOLUME_MOUNT_DIR}/${appName}:/persistant_data
 `
 
 const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
@@ -61,7 +61,7 @@ const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
         ports:
           - '${port}:${port}'
         volumes:
-          - ${VOLUME_MOUNT_DIR}/${appName}:/persistent_data
+          - ${VOLUME_MOUNT_DIR}/${appName}:/persistant_data
 `
 
 // https://github.com/docker-archive/for-aws/issues/104
@@ -114,24 +114,14 @@ server {
 
 `
 
-// Track FUSE mount processes to keep them alive
-const fuseProcesses = new Map();
-
 function createVolume(appName) {
   if (!volumesDir) return;
   const volumePath = `${volumesDir}/${appName}_data`;
   const mountDir = `${VOLUME_MOUNT_DIR}/${appName}`;
-  
   try {
     // Create volume file if it doesn't exist
     if (!fs.existsSync(volumePath)) {
-      console.log(`Creating volume for ${appName}...`);
-      execSync(`dd if=/dev/zero of="${volumePath}" bs=1M count=${VOLUME_SIZE}`, { stdio: 'inherit' });
-      
-      // Format the volume as ext4 using mke2fs from e2fsprogs
-      // mke2fs can format files directly without root access
-      console.log(`Formatting volume for ${appName}...`);
-      execSync(`/sbin/mke2fs -t ext4 -F "${volumePath}"`, { stdio: 'inherit' });
+      execSync(`dd if=/dev/zero of="${volumePath}" bs=1M count=0 seek=${VOLUME_SIZE}`);
     }
 
     // Create mount directory if it doesn't exist
@@ -140,77 +130,56 @@ function createVolume(appName) {
     }
 
     // Check if already mounted
+    const mounts = execSync('mount').toString();
+    if (mounts.includes(mountDir)) {
+      // Already mounted, skip
+      return;
+    }
+
+    // Set up loop device for the volume file
+    let loopdev = '';
     try {
-      const mountCheck = execSync('mount').toString();
-      if (mountCheck.includes(mountDir)) {
-        console.log(`Volume for ${appName} already mounted`);
-        return;
+      loopdev = execSync(`losetup -j "${volumePath}" | awk -F: '{print $1}'`).toString().trim();
+      if (!loopdev) {
+        loopdev = execSync(`losetup --find --show "${volumePath}"`).toString().trim();
       }
     } catch (err) {
-      // mount command failed, continue with mounting
+      console.error(`Failed to set up loop device for ${appName}:`, err);
+      return;
     }
 
-    // Mount using fuse2fs (FUSE-based ext4 filesystem)
-    console.log(`Mounting volume for ${appName} using FUSE...`);
-    
-    const fuseProcess = spawn('fuse2fs', [
-      '-o', 'rw,nonempty',
-      volumePath,
-      mountDir
-    ], {
-      detached: true,
-      stdio: 'ignore'
-    });
-
-    // Store the process so it doesn't get garbage collected
-    fuseProcesses.set(appName, fuseProcess);
-    
-    // Detach from parent process
-    fuseProcess.unref();
-
-
-    // Give it a moment to mount
-    execSync('sleep 0.5');
-
-    // Set permissions to 0777 so all users have write access
+    // Check if already formatted (has ext4)
+    let isFormatted = false;
     try {
-      execSync(`chmod 0777 "${mountDir}"`);
-      console.log(`Set permissions 0777 on ${mountDir}`);
-    } catch (permErr) {
-      console.error(`Failed to set permissions on ${mountDir}:`, permErr);
+      const blkid = execSync(`blkid -o value -s TYPE "${loopdev}"`).toString().trim();
+      if (blkid === 'ext4') isFormatted = true;
+    } catch (err) {
+      // Not formatted yet
+    }
+    if (!isFormatted) {
+      try {
+        execSync(`mkfs.ext4 -F "${loopdev}"`);
+      } catch (err) {
+        console.error(`Failed to format volume for ${appName}:`, err);
+        return;
+      }
     }
 
-    console.log(`Successfully mounted volume for ${appName}`);
-
+    // Mount if not already mounted
+    try {
+      execSync(`mount "${loopdev}" "${mountDir}"`);
+      // Set permissions to 0777 after mounting
+      fs.chmodSync(mountDir, 0o777);
+    } catch (err) {
+      // If already mounted, ignore; else log error
+      if (!/already mounted/.test(err.stderr?.toString() || '')) {
+        console.error(`Failed to mount volume for ${appName}:`, err);
+      }
+    }
   } catch (err) {
-    console.error(`Error creating/mounting volume for ${appName}:`, err);
+    console.error(`Error in createVolume for ${appName}:`, err);
   }
 }
-
-// Cleanup function to unmount all FUSE volumes
-function cleanupVolumes() {
-  console.log('Cleaning up FUSE volumes...');
-  fuseProcesses.forEach((process, appName) => {
-    try {
-      const mountDir = `${VOLUME_MOUNT_DIR}/${appName}`;
-      execSync(`fusermount -u "${mountDir}"`, { stdio: 'ignore' });
-      console.log(`Unmounted ${appName}`);
-    } catch (err) {
-      // Already unmounted or failed
-    }
-  });
-}
-
-// Handle graceful shutdown
-process.on('SIGINT', () => {
-  cleanupVolumes();
-  process.exit(0);
-});
-
-process.on('SIGTERM', () => {
-  cleanupVolumes();
-  process.exit(0);
-});
 
 async function getJSON(http, opts) {
 	const res = await request(http, opts)
@@ -276,7 +245,7 @@ const nginxCfg = process.argv[3]
 const volumesDir = process.argv[4]
 
 if (!(swarmCfg && swarmCfg.endsWith('.yaml') && nginxCfg && nginxCfg.endsWith('.conf'))) {
-	console.log('usage: beamup-sync-swarm <path to swarm yaml> <path to nginx config> [volumes directory]')
+	console.log('usage: beamup-sync-swarm <path to swarm yaml> <path to nginx config> <volumes directory>')
 	process.exit(1)
 }
 if (volumesDir) {
@@ -306,9 +275,4 @@ getConfigs().then(cfgs => {
 			})
 		})
 	}
-	console.log('Configuration complete. FUSE volumes mounted and ready.')
-}).catch(err => {
-	console.error('Error:', err);
-	cleanupVolumes();
-	process.exit(1);
 })
