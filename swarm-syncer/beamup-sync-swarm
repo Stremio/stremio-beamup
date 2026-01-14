@@ -10,7 +10,7 @@ const START_PORT = 8000
 const TOTAL_APP_LIMIT = 300
 const REGISTRY_URL = 'http://127.0.0.1:5000'
 const VOLUME_SIZE = '1GB'
-const VOLUME_MOUNT_DIR = `./beamup/volumes`;
+const VOLUME_MOUNT_DIR = `/mnt/beamup`;
 
 // https://docs.docker.com/compose/compose-file/04-version-and-name/#version-top-level-element-obsolete
 // Compose Specification is being used
@@ -117,63 +117,27 @@ server {
 function createVolume(appName) {
   if (!volumesDir) return;
   const volumePath = `${volumesDir}/${appName}_data`;
-  const mountDir = `${VOLUME_MOUNT_DIR}/${appName}`;
   try {
-    // Create volume file if it doesn't exist
+    // If the volume file does not exist, create and format it
     if (!fs.existsSync(volumePath)) {
       execSync(`dd if=/dev/zero of="${volumePath}" bs=1M count=0 seek=${VOLUME_SIZE}`);
-    }
-
-    // Create mount directory if it doesn't exist
-    if (!fs.existsSync(mountDir)) {
-      fs.mkdirSync(mountDir, { recursive: true });
-    }
-
-    // Check if already mounted
-    const mounts = execSync('mount').toString();
-    if (mounts.includes(mountDir)) {
-      // Already mounted, skip
-      return;
-    }
-
-    // Set up loop device for the volume file
-    let loopdev = '';
-    try {
-      loopdev = execSync(`losetup -j "${volumePath}" | awk -F: '{print $1}'`).toString().trim();
-      if (!loopdev) {
-        loopdev = execSync(`losetup --find --show "${volumePath}"`).toString().trim();
-      }
-    } catch (err) {
-      console.error(`Failed to set up loop device for ${appName}:`, err);
-      return;
-    }
-
-    // Check if already formatted (has ext4)
-    let isFormatted = false;
-    try {
-      const blkid = execSync(`blkid -o value -s TYPE "${loopdev}"`).toString().trim();
-      if (blkid === 'ext4') isFormatted = true;
-    } catch (err) {
-      // Not formatted yet
-    }
-    if (!isFormatted) {
+      // Set up a loop device, format as ext4, set permissions, then detach
+      let loopdev = execSync(`losetup --find --show "${volumePath}"`).toString().trim();
+      const tmpMount = `/tmp/beamup-mnt-${appName}-${process.pid}`;
       try {
         execSync(`mkfs.ext4 -F "${loopdev}"`);
+        fs.mkdirSync(tmpMount, { recursive: true });
+        execSync(`mount "${loopdev}" "${tmpMount}"`);
+        execSync(`chmod 0777 "${tmpMount}"`);
+        execSync(`umount "${tmpMount}"`);
+        fs.rmdirSync(tmpMount);
       } catch (err) {
-        console.error(`Failed to format volume for ${appName}:`, err);
-        return;
-      }
-    }
-
-    // Mount if not already mounted
-    try {
-      execSync(`mount "${loopdev}" "${mountDir}"`);
-      // Set permissions to 0777 after mounting
-      fs.chmodSync(mountDir, 0o777);
-    } catch (err) {
-      // If already mounted, ignore; else log error
-      if (!/already mounted/.test(err.stderr?.toString() || '')) {
-        console.error(`Failed to mount volume for ${appName}:`, err);
+        // Try to clean up if mount fails
+        try { execSync(`umount "${tmpMount}"`); } catch (e) {}
+        try { fs.rmdirSync(tmpMount); } catch (e) {}
+        throw err;
+      } finally {
+        execSync(`losetup -d "${loopdev}"`);
       }
     }
   } catch (err) {

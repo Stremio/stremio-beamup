@@ -47,6 +47,13 @@
         update_cache: yes
         cache_valid_time: 3600
 
+    - name: apt | Install autofs
+      apt:
+        name: autofs
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
     - name: Install nginx
       apt:
         name: nginx
