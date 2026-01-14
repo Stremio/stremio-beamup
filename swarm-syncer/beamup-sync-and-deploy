@@ -27,11 +27,11 @@ services:
 EOF
 docker stack rm --detach=false beamup_control
 sleep 10
-docker stack deploy --detach=false --compose-file registry.yaml beamup_control
+docker stack deploy --detach=false --compose-file registry.yaml beamup_control --detach=false
 sleep 50
 
-beamup-sync-swarm apps.yaml apps.conf
+sudo beamup-sync-swarm apps.yaml apps.conf docker_volumes
 APPS_COUNT=`cat apps.yaml | grep image | wc -l`
 if [ $APPS_COUNT -gt 0 ] ; then
-	docker stack deploy --prune --compose-file apps.yaml beamup
+	docker stack deploy --prune --compose-file apps.yaml beamup --detach=false
 fi
