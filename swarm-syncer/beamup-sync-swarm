@@ -59,13 +59,14 @@ const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
 
 // https://github.com/docker-archive/for-aws/issues/104
 // Creating network of /16 because of above issue
-const networkCfg = `networks:
-  default:
-    driver: overlay
-    ipam:
-      config:
-        - subnet: 10.2.0.0/16
-`
+// networkCfg currently not used because default network is generated in ansible/playbooks/swarm_0_init.yml
+//const networkCfg = `networks:
+//  default:
+//    driver: overlay
+//    ipam:
+//      config:
+//        - subnet: 10.2.0.0/16
+//`
 
 const APP_NGINX_TMPL = (appName, port) => `proxy_cache_path /var/lib/nginx/cache_${appName} levels=1:2 keys_zone=${appName}_cache:10m max_size=1g inactive=600m use_temp_path=off;
 upstream ${appName} {
@@ -154,6 +155,7 @@ async function getConfigs() {
 	const swarmHerokuishCfgs = apps.filter(app => !app.name.includes('docker')).map(app => APP_TMPL(app.name, app.fullImageName, app.port))
 	const swarmDockerfileCfgs = apps.filter(app => app.name.includes('docker')).map(app => APP_DOCKER_TMPL(app.name, app.fullImageName, app.port))
 	const swarmCfgs = swarmHerokuishCfgs.concat(swarmDockerfileCfgs)
+// This line should be used if networkCfg var is being enabled
 //	const swarmCfgs = swarmHerokuishCfgs.concat(swarmDockerfileCfgs,networkCfg)
 	const nginxCfgs = apps.map(app => APP_NGINX_TMPL(app.name, app.port))
 	return {
