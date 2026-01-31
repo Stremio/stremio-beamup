@@ -146,6 +146,24 @@
         action: insert
         rule_num: 2
       notify: Save iptables rules
+    - name: Reject access to port 5000 from docker_gwbridge
+      ansible.builtin.iptables:
+        chain: DOCKER-USER
+        protocol: tcp
+        destination_port: 5000
+        in_interface: docker_gwbridge
+        jump: REJECT
+        action: insert
+      notify: Save iptables rules
+    - name: Reject access to port 5000 from docker0
+      ansible.builtin.iptables:
+        chain: DOCKER-USER
+        protocol: tcp
+        destination_port: 5000
+        in_interface: docker0
+        jump: REJECT
+        action: insert
+      notify: Save iptables rules
 
   handlers:
     - name: Save iptables rules
