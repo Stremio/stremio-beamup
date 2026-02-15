@@ -171,7 +171,7 @@ resource "null_resource" "swarm_docker_join" {
 
   provisioner "remote-exec" {
     inline = [
-      var.swarm_nodes - 1 > 0 ? format("docker swarm join --token %s %s:2377", data.external.swarm_tokens.result.manager, local.swarm_manager_private_ip[1].address) : "echo skipping..."
+      var.swarm_nodes - 1 > 0 ? format("docker swarm join --token %s %s:2377", data.external.swarm_tokens.result.manager, local.swarm_manager_public_ip) : "echo skipping..."
     ]
   }
 }
