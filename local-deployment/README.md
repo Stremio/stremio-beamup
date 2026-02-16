@@ -25,11 +25,12 @@ https://learn.microsoft.com/en-us/windows-server/virtualization/hyper-v/enable-n
 ```bash
 ./local-deployment/server-init.sh
 ```
+This script only installs dependencies and base host setup.
 A relogin to the terminal for the user is being used is required after previous step, also, user that runs this script must have sudo privileges witn no password.
 
 - download base debian image
 ```bash
-wget https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericcloud-amd64.qcow2
+wget https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-generic-amd64.qcow2
 ```
 
 
@@ -61,9 +62,29 @@ wget https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericclou
       ```bash
       terraform apply -var-file=dev.tfvars
       ```
-    Make sure to copy and edit the `.tfvars` files from `dev.tfvars.example` if you haven't done so. Fill in the necessary information for your specific environment (either `development`, `production` or other).  
+    Make sure to copy and edit the `.tfvars` files from `dev.tfvars.example` if you haven't done so. Fill in the necessary information for your specific environment.  
 
-    - CAVEAT: Just as when deployed to Cherryservers, the first ansible playbook execution might fail with "E: Could not get lock /var/lib/dpkg/lock - open (11: Resource temporarily unavailable" error. This is due to server setup scripts on the Cherryservers, simply restart the terraform apply command.
+8. Configure local wildcard DNS and port forwarding after the swarm VMs are up:
+   ```bash
+   ./local-deployment/dns-init.sh
+   ```
+   Optional environment overrides:
+   - `LOCAL_BEAMUP_DOMAIN` (default: `beamup.test`)
+   - `DNS_UPSTREAM` (default: `1.1.1.1`)
+   - `SWARM_VM_NAME` (default: `stremio-beamup-swarm-0`)
+   - `DEPLOYER_VM_NAME` (default: `stremio-addon-deployer`)
+   - `A_RECORD_IP` (default: main VM LAN IP with last octet +/-1)
+   - `HOST_LAN_IP` (auto-detected from default route)
+   - `TARGET_IP` (auto-detected from `virsh domifaddr`)
+   - `DEPLOYER_IP` (auto-detected from `virsh domifaddr`)
 
-8. Create a DNS A Record for the deployer's public IP, e.g.: `deployer.beamup.dev`.  
-It can be created in CloudFlare. This DNS can be used with `beamup-cli` to deploy the addons.
+
+## Deploying addons 
+
+After the local infrastructure is deployed, use this flow to deploy addons with `beamup-cli`:
+
+1. Set your client DNS server to the IP address of the main VM.
+2. Run `beamup config` and set the host to `a.beamup.test`.
+3. Run `beamup deploy`.
+
+Once these are done, addon deployment should work end-to-end in the local setup.

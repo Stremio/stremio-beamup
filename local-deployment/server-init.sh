@@ -1,3 +1,7 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
 sudo apt-get update && sudo apt-get install -y gnupg software-properties-common
 
 
@@ -41,7 +45,7 @@ sudo apt update
 
 echo 'Installing dependencies ...'
 
-sudo apt-get install qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils mkisofs terraform ansible -y
+sudo apt-get install qemu-kvm libvirt-daemon-system libvirt-clients bridge-utils mkisofs terraform ansible dnsmasq -y
 
 
 # Adding current user to libvirt
@@ -64,3 +68,6 @@ sudo systemctl restart libvirtd
 
 ansible-galaxy install -r ansible/requirements.yml --force
 ansible-galaxy collection install -r ansible/requirements.yml --force
+
+echo "Local setup complete."
+echo "After terraform apply, run ./local-deployment/dns-init.sh"

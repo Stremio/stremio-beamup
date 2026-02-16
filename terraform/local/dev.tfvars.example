@@ -13,10 +13,10 @@
 #terraform_inventory_path = "../../inventory.yml"
 
 # Domain name for the deployment
-domain = "beamup.dev"
+domain = "beamup.test"
 
 # Number of swarm nodes to create
-swarm_nodes = 1
+swarm_nodes = 3
 
 # The password for the OS user in SHA512 (Required)
 # Generate with: mkpasswd --method=sha-512
