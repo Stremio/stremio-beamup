@@ -74,7 +74,7 @@ upstream ${appName} {
 }
 
 server {
-        server_name ~^${appName}.;
+        server_name ~^${appName}\\.;
         access_log     /var/log/nginx/nginx.vhost.access.log;
         error_log      /var/log/nginx/nginx.vhost.error.log;
         #listen     443;
