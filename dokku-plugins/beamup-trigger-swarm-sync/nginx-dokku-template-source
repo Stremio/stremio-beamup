@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Print the absolute path to your template
+echo "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/templates/dokku.conf.sigil"

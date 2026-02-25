@@ -27,6 +27,9 @@
         dest: /var/lib/dokku/plugins/enabled/beamup-trigger-swarm-sync
         state: link
 
+    - name: Install the beamup dokku plugin
+      shell: 'dokku plugin:install'
+
     - name: Install the beamup scripts [1/2]
       copy:
         src: ../../scripts/beamup-entry
