@@ -51,10 +51,10 @@ getNewAuthKeysContent()
 		process.exit(2)
 	})
 
-function isBanned(githubUser) {
+function isBanned(hashedUsername) {
 	try {
 		const users = fs.readFileSync(BAN_LIST_PATH, 'utf8');
-		return users.toString().split('\n').includes(githubUser);
+		return users.toString().split('\n').includes(hashedUsername);
 	} catch (err) {
 		//if the banlist file doesn't exist
 		return false;
