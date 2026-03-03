@@ -69,7 +69,10 @@ fi
 
 # Validate that exactly one argument (the addon name) is now present
 if [[ $# -ne 1 ]]; then
-    usage
+    echo "Usage: $0 [--force] addon_name"
+    echo "  addon_name: Name of the addon to delete"
+    echo "  Please quote the addon name to prevent globbing."
+    exit 1
 fi
 
 # Store the remaining argument as the addon name
@@ -107,13 +110,6 @@ fi
 
 # FUNCTIONS
 
-# Function to display usage message
-usage() {
-    echo "Usage: $0 [--force] addon_name"
-    echo "  addon_name: Name of the addon to delete"
-    echo "  Please quote the addon name to prevent globbing."
-    exit 1
-}
 
 # Function to validate addon name
 validate_addon_name() {
