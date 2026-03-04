@@ -6,19 +6,12 @@ const writeFile = promisify(fs.writeFile.bind(fs))
 const readFile = promisify(fs.readFile.bind(fs))
 const httpsGet = args => new Promise((resolve, reject) => https.get(args, resolve).on('error', reject))
 
-const BAN_LIST_PATH = '/etc/beamup/ban_list.txt'
-
 const [AUTH_KEYS_PATH, GITHUB_USER_RAW, GITHUB_USER_HASHED] = process.argv.slice(2)
 if (!(AUTH_KEYS_PATH && GITHUB_USER_RAW && GITHUB_USER_HASHED)) {
 	console.error(`Usage: beamup-sync-keys <path to authorized_keys> <GitHub username> <hashed GitHub username>`)
 	process.exit(1)
 }
 const GITHUB_USER = GITHUB_USER_RAW.toLowerCase()
-
-if (isBanned(GITHUB_USER_HASHED)) {
-	console.error(`GitHub user ${GITHUB_USER} is banned`)
-	process.exit(1)
-}
 
 async function fetchKeys(githubUser) {
 	const res = await httpsGet(`https://github.com/${githubUser}.keys`)
@@ -50,13 +43,3 @@ getNewAuthKeysContent()
 		console.error(e)
 		process.exit(2)
 	})
-
-function isBanned(hashedUsername) {
-	try {
-		const users = fs.readFileSync(BAN_LIST_PATH, 'utf8');
-		return users.toString().split('\n').includes(hashedUsername);
-	} catch (err) {
-		//if the banlist file doesn't exist
-		return false;
-	}
-}
