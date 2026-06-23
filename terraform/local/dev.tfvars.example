@@ -30,7 +30,7 @@ username = "beamup"
 deployment_environment = "development"
 
 # This should be the name of the interface that has the Public IP and allows access to Internet
-first_interface = "enp1s0"
+first_interface = "ens4"
 
 # Libvirt specific variables
 libvirt_uri = "qemu:///system"
