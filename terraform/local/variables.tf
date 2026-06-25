@@ -77,6 +77,12 @@ variable "first_interface" {
   default     = "enp1s0"
 }
 
+variable "docker_swarm_interface" {
+  description = "Interface (or address) Docker Swarm advertises to other nodes on swarm init. When empty, the node's default IPv4 address is auto-detected. Set via tfvars or the TF_VAR_docker_swarm_interface environment variable."
+  type        = string
+  default     = ""
+}
+
 # Libvirt specific variables
 variable "libvirt_uri" {
   description = "Libvirt connection URI"

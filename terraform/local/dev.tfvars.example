@@ -32,6 +32,11 @@ deployment_environment = "development"
 # This should be the name of the interface that has the Public IP and allows access to Internet
 first_interface = "ens4"
 
+# Interface (or address) Docker Swarm advertises to other nodes on swarm init.
+# Leave empty to auto-detect the node's default IPv4 address.
+# Can also be set via the TF_VAR_docker_swarm_interface environment variable.
+#docker_swarm_interface = "ens4"
+
 # Libvirt specific variables
 libvirt_uri = "qemu:///system"
 base_image_path = "../../debian-12-genericcloud-amd64.qcow2"
