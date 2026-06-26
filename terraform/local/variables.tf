@@ -74,7 +74,7 @@ variable "autostart" {
 variable "first_interface" {
   description = "This should be the name of the interface that has the Public IP and allows access to Internet"
   type        = string
-  default     = "enp1s0"
+  default     = ""
 }
 
 variable "docker_swarm_interface" {

@@ -81,7 +81,7 @@ variable "deployment_environment" {
 variable "first_interface" {
   description = "This should be the name of the interface that has the Public IP and allows access to Internet"
   type        = string
-  default     = "eth0"
+  default     = ""
 }
 
 variable "docker_swarm_interface" {

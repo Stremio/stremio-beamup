@@ -30,7 +30,7 @@ username = "beamup"
 deployment_environment = "development"
 
 # This should be the name of the interface that has the Public IP and allows access to Internet
-first_interface = "ens4"
+#first_interface = "ens3"
 
 # Interface (or address) Docker Swarm advertises to other nodes on swarm init.
 # Leave empty to auto-detect the node's default IPv4 address.
