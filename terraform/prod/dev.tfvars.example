@@ -27,7 +27,7 @@ swarm_nodes = "3" # It's been tested with 1 and 3 nodes
 # The password for the OS user in SHA512 (Required)
 # Generate with: mkpasswd --method=sha-512
 # https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#how-do-i-generate-encrypted-passwords-for-the-user-module
-#user_password_hash = "$6$example$hashvalue" # Example with password: ChangeMeOrDie!
+user_password_hash = "$6$pbhWc9xT8h6aAZQH$IatvugXNCO6rCuf8zkDZtYrl0r.kAw8HwoVCy7hQSOHWACM.v1QWtoko6lOQi2S1op87ybnwSKXgWincsNB481" # Example with password: ChangeMeOrDie!
 
 # Username for the system user
 username = "beamup"
