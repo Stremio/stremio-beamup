@@ -5,7 +5,7 @@
 
 This document provides instructions for setting up and deploying the Stremio Beamup project in a local environment. 
 
-It is recommended to run this setup inside an Ubuntu virtual machine with sufficient disk space, CPU, and RAM. This approach allows deployment from any system using any VM software. Please follow the official instructions for your operating system and VM software to create and configure the virtual machine. 
+It is recommended to run this setup inside an Ubuntu virtual machine (aka main machine) with sufficient disk space, CPU, and RAM. This approach allows deployment from any system using any VM software. Please follow the official instructions for your operating system and VM software to create and configure the virtual machine. 
 
 Known working envirement (it may work with less resources):
 - VM OS: ubuntu-24.04.3-live-server-amd64.iso
@@ -64,7 +64,11 @@ wget https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericclou
       ```
     Make sure to copy and edit the `.tfvars` files from `dev.tfvars.example` if you haven't done so. Fill in the necessary information for your specific environment.  
 
-8. Configure local wildcard DNS and port forwarding after the swarm VMs are up:
+8. Configure DNS 
+   Script has two modes, proxy and direct. Proxy is to use access URLs from outside this main machine if it's virtualized, it uses iptables to configure port forwarding. Direct would be to access the addons from this main machine aka the Ubuntu.
+   
+   Run from project root dir
+   
    ```bash
    ./local-deployment/dns-init.sh
    ```
@@ -89,6 +93,7 @@ wget https://cloud.debian.org/images/cloud/bookworm/latest/debian-12-genericclou
 After the local infrastructure is deployed, use this flow to deploy addons with `beamup-cli`:
 
 1. Set your client DNS server to the IP address of the main VM.
+  In main machine Ubuntu this can be done by setting the DNS in netplan config in `/etc/netplan/CONFIG-FILE.yaml` and then `netplan apply`. E.g. for this scenario would be pointing to 127.0.0.1.
 2. Run `beamup config` and set the host to `a.beamup.test`.
 3. Run `beamup deploy`.
 
@@ -114,11 +119,29 @@ Once these are done, addon deployment should work end-to-end in the local setup.
 
   Remove VMs and storages:
   ```bash
-  virsh undefine --remove-all-storage --domain stremio-beamup-swarm-0
+  virsh undefine --remove-all-storage --domain stremio-addon-deployer
   virsh undefine --remove-all-storage --domain stremio-beamup-swarm-0
   ```
 
   Check again there is nothing here:
   ```bash
   virsh list --all
+  ```
+
+### Connect to beamup nodes
+  To get the IPs of nodes, it can be retrieved with this commands:
+  ```bash
+  virsh domifaddr --domain stremio-addon-deployer
+  virsh domifaddr --domain stremio-beamup-swarm-0
+  virsh domifaddr --domain stremio-beamup-swarm-1
+  ```
+
+  Also with terraform from `terraform/local`:
+  ```bash
+  terraform output
+  ```
+  
+  To connect with ssh from project root dir:
+  ```bash
+  ssh -i id_deploy beamup@IP
   ```
