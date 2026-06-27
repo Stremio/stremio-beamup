@@ -170,10 +170,10 @@ no-resolv
 server=${DNS_UPSTREAM}
 domain-needed
 bogus-priv
-address=/a.${LOCAL_BEAMUP_DOMAIN}/${DEPLOYER_IP}
-address=/${LOCAL_BEAMUP_DOMAIN}/${DEPLOYER_IP}
-address=/www.${LOCAL_BEAMUP_DOMAIN}/${DEPLOYER_IP}
-address=/.${LOCAL_BEAMUP_DOMAIN}/${TARGET_IP}
+host-record=a.${LOCAL_BEAMUP_DOMAIN},${DEPLOYER_IP}
+host-record=${LOCAL_BEAMUP_DOMAIN},${DEPLOYER_IP}
+host-record=www.${LOCAL_BEAMUP_DOMAIN},${DEPLOYER_IP}
+address=/*.${LOCAL_BEAMUP_DOMAIN}/${TARGET_IP}
 EOF
 fi
 sudo systemctl enable dnsmasq
