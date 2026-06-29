@@ -21,3 +21,12 @@
     - role: geerlingguy.pip
       pip_install_packages:
         - name: docker
+
+- name: Add beamup user to docker group
+  hosts: swarm
+  tasks:
+    - name: Ensure beamup user is part of docker group
+      user:
+        name: beamup
+        groups: docker
+        append: yes

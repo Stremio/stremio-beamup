@@ -1,0 +1,54 @@
+###############################################
+# prod.tfvars.example
+# Example values for all variables defined in variables.tf
+###############################################
+
+# Path to the private SSH key
+#private_key = "../../id_deploy"
+
+# Path to the authorized_keys file
+#public_keys = "../../authorized_keys"
+
+# Path to the deployer's private SSH key
+#deployer_key = "../../id_ed25519_deployer_sync"
+
+# Path to the deployer tunnel private SSH key
+#deployer_tunnel_key = "../../id_ed25519_deployer_tunnel"
+
+# Path to the terraform-inventory
+#terraform_inventory_path = "../../inventory.yml"
+
+# Domain name for the deployment
+domain = "beamup.com"
+
+# Number of swarm nodes to create
+swarm_nodes = "3" # It's been tested with 1 and 3 nodes
+
+# The password for the OS user in SHA512 (Required)
+# Generate with: mkpasswd --method=sha-512
+# https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#how-do-i-generate-encrypted-passwords-for-the-user-module
+#user_password_hash = "$6$pbhWc9xT8h6aAZQH$IatvugXNCO6rCuf8zkDZtYrl0r.kAw8HwoVCy7hQSOHWACM.v1QWtoko6lOQi2S1op87ybnwSKXgWincsNB481" # Example with password: ChangeMeOrDie!
+
+# Username for the system user
+username = "beamup"
+
+# The environment this infrastructure should be associated with
+deployment_environment = "production"
+
+# This should be the name of the interface that has the Public IP and allows access to Internet
+#first_interface = "ens3"
+
+# Interface (or address) Docker Swarm advertises to other nodes on swarm init.
+# Leave empty to auto-detect the node's default IPv4 address.
+# Can also be set via the TF_VAR_docker_swarm_interface environment variable.
+docker_swarm_interface = "ens4"
+
+# UpCloud specific variables
+region = "eu_nord_1"
+image  = "debian_12_64bit"
+
+# About plans
+# Smart Servers are not supported anymore, like id 94 for ssd_smart16
+# Virtual Servers no longer have Debian 10 and that is needed for Dokku v0.20.
+deployer_plan_slug = "cloud_vds_6" # ID 720
+swarm_plan_slug    = "cloud_vds_6" # ID 720

@@ -123,7 +123,7 @@
     #
     - name: Debug print the first network interface
       ansible.builtin.debug:
-        msg: "The first network interface is {{ first_interface }}"
+        msg: "The first network interface is {{ first_interface | default(ansible_default_ipv4.interface, true) }}"
 
     - name: Allow localhost access to port 5000
       ansible.builtin.iptables:
@@ -141,7 +141,7 @@
         chain: DOCKER-USER
         protocol: tcp
         destination_port: 5000
-        in_interface: "{{ first_interface }}"
+        in_interface: "{{ first_interface | default(ansible_default_ipv4.interface, true) }}"
         jump: DROP
         action: insert
         rule_num: 2
