@@ -30,3 +30,13 @@ echo -e "\e[0;33m\tNote: This URL will only be accessible if the"
 echo -e "\tBeamUp Panel is enabled and deployed.\e[0m"
 echo -e "\e[1;36m==================================================\e[0m"
 echo
+
+# delete-container: remove the app's containers now that the swarm has
+# the image; this app is meant to run on the swarm, not on this host
+CIDS=$(docker ps -aq --filter "label=com.dokku.app-name=$APP" || true)
+if [[ -n "$CIDS" ]]; then
+  echo " !     delete-container: removing containers for $APP"
+  docker rm -f $CIDS >/dev/null
+else
+  echo " !     delete-container: no containers found for $APP"
+fi
