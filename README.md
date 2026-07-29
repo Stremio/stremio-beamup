@@ -31,7 +31,13 @@ This can be done in CloudFlare too in the next step, or it can be registered fro
     2. Follow the on-screen instructions to add your domain (also known as a 'zone' or 'site').
     3. Once the zone is added, locate and note down the Zone ID. Add this to a `cloudflare_zone_id` file in the `creds/` directory.
     4. Create an API Token within CloudFlare with the permission of DNS:Edit for the zone you just created. Save this token to a `cloudflare_token` file in the `creds/` directory.
-
+9. Configure beamup-sync (OPTIONAL)
+    1. Create or update `creds/sync/sync.conf` with your beamup-sync settings (remotes, retention, encryption, etc.). See [scripts/beamup-sync/README.md](scripts/beamup-sync/README.md) for config details.
+    2. If you use encrypted backups over SSH, generate a sync keypair:
+       ```bash
+       ssh-keygen -t ed25519 -f creds/sync/sync -C "beamup_sync_key"
+       ```
+       This creates `creds/sync/sync` and `creds/sync/sync.pub`.
 10. Setup Terraform and apply configurations:
     - Run the Terraform initialization command:
       ```bash
@@ -46,7 +52,7 @@ This can be done in CloudFlare too in the next step, or it can be registered fro
       TF_LOG=DEBUG TF_LOG_PATH="./logs/terraform.log" terraform apply -var-file=prod.tfvars
       ```
     Make sure to copy and edit the `.tfvars` files from their corresponding `.tfvars.example` if you haven't done so. Fill in the necessary information for your specific environment (either `development`, `production` or other).  
-9. Create a DNS A Record for the deployer's public IP, e.g.: `deployer.beamup.dev`.  
+11. Create a DNS A Record for the deployer's public IP, e.g.: `deployer.beamup.dev`.  
 It can be created in CloudFlare. This DNS can be used with `beamup-cli` to deploy the addons.
 
 By default, this will bootstrap a single server called `deployer` that can be used to deploy addons and a docker swarm with three nodes where the addons will be deployed.

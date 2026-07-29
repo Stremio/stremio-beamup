@@ -61,3 +61,93 @@
         mode: 0600
         owner: dokku
         group: dokku
+
+    # beamup-sync setup
+
+    - name: Install age package for beamup-sync encryption
+      apt:
+        name: age
+        state: present
+
+    - name: Install the beamup-sync scripts [1/5]
+      file:
+        path: /usr/local/lib/beamup
+        state: directory
+        mode: 0755
+
+    - name: Install the beamup-sync scripts [2/5]
+      copy:
+        src: ../../scripts/beamup-sync/beamup-sync.sh
+        dest: /usr/local/bin/beamup-sync
+        mode: 0755
+
+    - name: Install the beamup-sync scripts [3/5]
+      copy:
+        src: ../../scripts/beamup-sync/beamup-common.sh
+        dest: /usr/local/lib/beamup/beamup-common
+        mode: 0755
+
+    - name: Install the beamup-sync scripts [4/5]
+      copy:
+        src: ../../scripts/beamup-sync/beamup-backup.sh
+        dest: /usr/local/lib/beamup/beamup-backup
+        mode: 0755
+
+    - name: Install the beamup-sync scripts [5/5]
+      copy:
+        src: ../../scripts/beamup-sync/beamup-restore.sh
+        dest: /usr/local/lib/beamup/beamup-restore
+        mode: 0755
+
+    - name: Check if local beamup sync config exists
+      stat:
+        path: "{{ playbook_dir }}/../../creds/sync/sync.conf"
+      register: beamup_sync_conf_local
+      delegate_to: localhost
+      become: false
+      run_once: true
+
+    - name: Ensure /etc/beamup exists when sync config is provided
+      file:
+        path: /etc/beamup
+        state: directory
+        mode: 0755
+      when: beamup_sync_conf_local.stat.exists
+
+    - name: Install beamup sync config when present locally
+      copy:
+        src: ../../creds/sync/sync.conf
+        dest: /etc/beamup/sync.conf
+        mode: 0600
+      when: beamup_sync_conf_local.stat.exists
+
+    - name: Check optional local beamup sync SSH keys
+      stat:
+        path: "{{ playbook_dir }}/../../creds/sync/{{ item }}"
+      loop:
+        - sync
+        - sync.pub
+      register: beamup_sync_keys_local
+      delegate_to: localhost
+      become: false
+      run_once: true
+
+    - name: Ensure /etc/beamup/keys exists when SSH keys are provided
+      file:
+        path: /etc/beamup/keys
+        state: directory
+        owner: root
+        group: root
+        mode: 0700
+      when: (beamup_sync_keys_local.results | selectattr('stat.exists', 'equalto', true) | list | length) > 0
+
+    - name: Install beamup sync SSH keys when present locally
+      copy:
+        src: "{{ item.stat.path }}"
+        dest: "/etc/beamup/keys/{{ item.item }}"
+        owner: root
+        group: root
+        mode: "{{ '0644' if item.item.endswith('.pub') else '0600' }}"
+      loop: "{{ beamup_sync_keys_local.results }}"
+      when: item.stat.exists
+      no_log: "{{ not item.item.endswith('.pub') }}"

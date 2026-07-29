@@ -72,3 +72,44 @@
         name: sysstat
         state: started
         enabled: yes
+
+    # beamup-sync dependencies
+
+    - name: Install lftp
+      apt:
+        name: lftp
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install unzip
+      apt:
+        name: unzip
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Install age package for beamup-sync encryption
+      apt:
+        name: age
+        state: present
+        update_cache: yes
+        cache_valid_time: 3600
+
+    - name: Download AWS CLI v2 bundle
+      get_url:
+        url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+        dest: /tmp/awscliv2.zip
+        mode: '0644'
+
+    - name: Extract AWS CLI v2 installer
+      unarchive:
+        src: /tmp/awscliv2.zip
+        dest: /tmp
+        remote_src: true
+        creates: /tmp/aws/install
+
+    - name: Install AWS CLI v2
+      command: /tmp/aws/install
+      args:
+        creates: /usr/local/bin/aws
