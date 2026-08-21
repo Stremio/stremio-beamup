@@ -9,6 +9,7 @@ id_ed25519_deployer_tunnel*
 secure-tunnel-swarm.service
 backups
 tools/delete-addon.sh
+node_modules
 
 # Terraform Dependency Lock File
 # https://developer.hashicorp.com/terraform/language/files/dependency-lock

@@ -11,7 +11,7 @@
 
     - name: Copy the dokku beamup plugin structure
       copy:
-        src: ../../dokku-plugins/beamup-trigger-swarm-sync
+        src: ../../dokku-plugins/
         dest: /var/lib/dokku/plugins/available
         mode: 0755
 
@@ -21,13 +21,17 @@
         dest: /var/lib/dokku/plugins/available/beamup-trigger-swarm-sync/post-deploy
         mode: 0755
 
-    - name: Enable the beamup dokku plugin
+    - name: Enable the beamup dokku plugins
       file:
-        src: /var/lib/dokku/plugins/available/beamup-trigger-swarm-sync
-        dest: /var/lib/dokku/plugins/enabled/beamup-trigger-swarm-sync
+        src: /var/lib/dokku/plugins/available/{{ item }}
+        dest: /var/lib/dokku/plugins/enabled/{{ item }}
         state: link
+      loop:
+        - beamup-trigger-swarm-sync
+        - beamup-addon-linter
 
-    - name: Install the beamup dokku plugin
+    # this also runs the install trigger to install plugin dependencies. 
+    - name: Install the beamup dokku plugins
       shell: 'dokku plugin:install'
 
     - name: Install the beamup scripts [1/2]

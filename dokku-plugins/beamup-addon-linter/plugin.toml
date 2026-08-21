@@ -1,0 +1,4 @@
+[plugin]
+description = "Beamup addon linter: validates an addon before it is deployed to the swarm"
+version = "0.34.4"
+[plugin.config]

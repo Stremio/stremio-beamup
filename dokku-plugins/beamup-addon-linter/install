@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+# runs on `dokku plugin:install`, see ansible/playbooks/deployer_setup.yml
+
+PLUGIN_ROOT=$(cd "$(dirname "$0")" && pwd)
+
+echo "-----> beamup-trigger-swarm-sync: installing addon linter dependencies"
+npm install --no-audit --no-fund --omit=dev --prefix "$PLUGIN_ROOT/linter"
