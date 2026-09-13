@@ -61,6 +61,5 @@ locals {
   workdir = data.external.workdir.result.workdir
   
   # Generated files
-  sync_script_content    = data.template_file.beamup_sync_swarm.rendered
-  tunnel_service_content = data.template_file.ssh_tunnel_service.rendered
+  sync_script_content = data.template_file.beamup_sync_swarm.rendered
 }

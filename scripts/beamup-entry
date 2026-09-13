@@ -152,7 +152,9 @@ then
         if [ "$1" = "logs" ];
         then
                 case "$APP_NAME" in
-                        ${GITHUB_USER_HASHED}-*) ssh -T -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0 $1 $APP_NAME;;
+                        ${GITHUB_USER_HASHED}-*)
+                                SWARM_TARGET=$(beamup-swarm-target)
+                                ssh -T -i /home/dokku/.ssh/id_ed25519_sync "beamup@$SWARM_TARGET" $1 $APP_NAME;;
                         *)  exit 1 ;;
                 esac
         else

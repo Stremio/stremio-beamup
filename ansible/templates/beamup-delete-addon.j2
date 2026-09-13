@@ -45,12 +45,15 @@ Disclaimers:
 
 # Set server and domain variables
 #DOKKU_SERVER="beamup@stremio-beamup-deployer"
+# NOTE: still pinned to swarm-0 because the shell-access SSH key used for the
+# Cloudflare credentials fetch and the nginx/service verification below is
+# only authorized there. The registry itself now runs on this host (the
+# deployer) and is handled locally.
 SWARM_SERVER="beamup@stremio-beamup-swarm-0"
 #TODO: This needs to be dynamic
 DOMAIN="{{ domain }}"  # Set your domain here
 
 # Other vars:
-DOCKER_REGISTRY_SERVER=$SWARM_SERVER
 TIME_TO_WAIT=30
 TOTAL_APP_LIMIT=400
 DOKKU_SSH_PRIVATE_KEY=/home/dokku/.ssh/id_ed25519
@@ -151,17 +154,25 @@ get_cloudflare_domain() {
 }
 
 # Function to delete from Docker Registry with verification
+# The registry runs on this host (swarm service pinned to the deployer) with
+# its data bind-mounted at /var/lib/registry, so deletion happens through the
+# local registry container - no SSH and no sudo needed.
 delete_from_docker_registry() {
     echo
     echo "------------------------------------------"
     echo "Deleting from Docker Registry..."
-    if ! ssh -i $DOKKU_SSH_PRIVATE_KEY -q $DOCKER_REGISTRY_SERVER "sudo rm -rf /var/lib/registry/docker/registry/v2/repositories/dokku/$ADDON_NAME/"; then
+    REGISTRY_CONTAINER=$(docker ps -q -f name=beamup_control_registry)
+    if [[ -z "$REGISTRY_CONTAINER" ]]; then
+        echo "Error: registry container not found on this host."
+        exit 1
+    fi
+    if ! docker exec "$REGISTRY_CONTAINER" rm -rf "/var/lib/registry/docker/registry/v2/repositories/dokku/$ADDON_NAME"; then
         echo "Error: Failed to delete repository in Docker Registry."
         exit 1
     fi
 
     # Verification
-    if ssh -i $DOKKU_SSH_PRIVATE_KEY -q $DOCKER_REGISTRY_SERVER "curl -s http://localhost:5000/v2/_catalog?n=${TOTAL_APP_LIMIT} | jq -e '.repositories[] | select(. == \"dokku/$ADDON_NAME\")'"; then
+    if curl -s "http://localhost:5000/v2/_catalog?n=${TOTAL_APP_LIMIT}" | jq -e ".repositories[] | select(. == \"dokku/$ADDON_NAME\")"; then
         echo "Error: Repository still exists in Docker Registry."
         exit 1
     else
@@ -195,7 +206,9 @@ delete_from_dokku() {
 trigger_sync() {
     echo "------------------------------------------"
     echo "Triggering sync..."
-    ssh -q -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0 sync || { echo "Error: SSH command failed."; exit 1; }
+    SWARM_TARGET=$(beamup-swarm-target) || { echo "Error: no healthy swarm manager found."; exit 1; }
+    echo "Syncing through $SWARM_TARGET"
+    ssh -q -i /home/dokku/.ssh/id_ed25519_sync "beamup@$SWARM_TARGET" sync || { echo "Error: SSH command failed."; exit 1; }
 
     echo
     echo "Waiting $TIME_TO_WAIT seconds for docker swarm to update its tasks"
@@ -300,7 +313,7 @@ validate_addon_name "$ADDON_NAME"
 echo "Running script with the following settings:"
 echo "Addon Name: $ADDON_NAME"
 echo "Swarm Server: $SWARM_SERVER"
-echo "Docker Registry Server: $DOCKER_REGISTRY_SERVER"
+echo "Docker Registry Server: localhost (registry runs on the deployer)"
 #echo "Dokku Server: $DOKKU_SERVER"
 echo "Domain: $DOMAIN"
 #echo "CloudFlare Zone ID: $CLOUDFLARE_ZONE_ID"

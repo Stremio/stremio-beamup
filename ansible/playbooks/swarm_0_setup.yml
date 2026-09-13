@@ -5,6 +5,15 @@
         hostname: stremio-beamup-swarm-0
         labels:
           short_name: swarm-0
+
+    # The deployer joins the swarm as a worker and hosts the registry
+    # (beamup-sync-and-deploy pins it with node.labels.role == registry).
+    # An explicit label keeps the placement stable if more workers are added.
+    - name: Label the deployer node as the registry host
+      community.docker.docker_node:
+        hostname: stremio-addon-deployer
+        labels:
+          role: registry
             #    This is done for each node now in another script
             #    - name: Install the beamup swarm scripts [1/2]
             #      ansible.builtin.copy:
