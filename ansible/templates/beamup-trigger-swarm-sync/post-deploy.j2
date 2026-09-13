@@ -27,9 +27,11 @@ docker push localhost:5000/dokku/$APP:latest # >/dev/null
 dokku ps:stop "$APP" >/dev/null
 echo "clean-up task: local containers for $APP stopped on deployer server"
 
-# trigger swarm sync
+# trigger swarm sync on the first healthy manager node
 # TODO -q
-ssh -T -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0 sync
+SWARM_TARGET=$(beamup-swarm-target)
+echo "Syncing swarm through $SWARM_TARGET"
+ssh -T -i /home/dokku/.ssh/id_ed25519_sync "beamup@$SWARM_TARGET" sync
 
 # beamup-panel URL
 # https://github.com/Stremio/beamup-panel
