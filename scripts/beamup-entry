@@ -131,6 +131,8 @@ then
             EXIT_CODE=${PIPESTATUS[0]}  # Capture the exit code of beamup-delete-addon
 
             if [ "$EXIT_CODE" -eq 0 ]; then
+                ssh -T -i /home/dokku/.ssh/id_ed25519_sync \
+                    beamup@stremio-beamup-swarm-0 delete-config "$APP_NAME" || exit $?
                 echo "INFO: Successfully deleted addon $ADDON_NAME" >&2
             else
                 send_git_error "ERROR: Addon deletion failed for $ADDON_NAME"
@@ -157,7 +159,12 @@ then
                 esac
         else
                 case "$APP_NAME" in
-                        ${GITHUB_USER_HASHED}-*) dokku $1 $APP_NAME "$3";;
+                        ${GITHUB_USER_HASHED}-*)
+                                dokku "$1" "$APP_NAME" "$3" || exit $?
+                                if [ "$1" = "config:set" ]; then
+                                        beamup-sync-app-config "$APP_NAME"
+                                fi
+                                ;;
                         *)  exit 1 ;;
                 esac
         fi

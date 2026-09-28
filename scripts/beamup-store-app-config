@@ -1,0 +1,39 @@
+#!/usr/bin/env nodejs
+
+const fs = require('fs')
+const path = require('path')
+
+const app = process.argv[2]
+if (!/^[a-z0-9-]+$/.test(app || '')) {
+  console.error('Invalid app name')
+  process.exit(1)
+}
+
+const dir = path.join(process.env.HOME, '.beamup-app-config')
+fs.mkdirSync(dir, { mode: 0o700, recursive: true })
+fs.chmodSync(dir, 0o700)
+const chunks = []
+let size = 0
+process.stdin.on('data', chunk => {
+  size += chunk.length
+  if (size > 1024 * 1024) {
+    console.error('App config exceeds 1 MiB')
+    process.exit(1)
+  }
+  chunks.push(chunk)
+})
+process.stdin.on('end', () => {
+  const config = JSON.parse(Buffer.concat(chunks).toString('utf8'))
+  if (!config || Array.isArray(config) || typeof config !== 'object' ||
+      Object.entries(config).some(([key, value]) =>
+        !/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key) || typeof value !== 'string')) {
+    throw new Error('Invalid app config')
+  }
+  const temp = path.join(dir, `${app}.${process.pid}.tmp`)
+  try {
+    fs.writeFileSync(temp, JSON.stringify(config), { mode: 0o600, flag: 'wx' })
+    fs.renameSync(temp, path.join(dir, `${app}.json`))
+  } finally {
+    if (fs.existsSync(temp)) fs.unlinkSync(temp)
+  }
+})

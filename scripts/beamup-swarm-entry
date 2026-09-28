@@ -13,6 +13,17 @@ case "$1" in
         sync)
                 /home/beamup/beamup-sync-swarm.sh
                 ;;
+        sync-config)
+                beamup-store-app-config "$2"
+                /home/beamup/beamup-sync-swarm.sh
+                ;;
+        delete-config)
+                if [[ ! "$2" =~ ^[a-z0-9-]+$ ]]; then
+                        echo "Invalid app name" >&2
+                        exit 1
+                fi
+                rm -f "/home/beamup/.beamup-app-config/$2.json"
+                ;;
         swarm-nodes)
                 docker node ls
                 ;;

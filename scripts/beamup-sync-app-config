@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+APP=$1
+if [[ ! "$APP" =~ ^[a-z0-9-]+$ ]]; then
+    echo "Invalid app name" >&2
+    exit 1
+fi
+
+# Keep values out of argv, shell traces and deployment logs. The sync key is
+# restricted to beamup-swarm-entry on the manager.
+beamup-export-app-config "$APP" | ssh -T -i /home/dokku/.ssh/id_ed25519_sync \
+    beamup@stremio-beamup-swarm-0 sync-config "$APP"
