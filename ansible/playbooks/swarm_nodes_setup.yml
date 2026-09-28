@@ -20,3 +20,9 @@
         src: ../../scripts/server-stats
         dest: /usr/local/bin/
         mode: 0755
+
+    - name: Install app config receiver
+      ansible.builtin.copy:
+        src: ../../scripts/beamup-store-app-config
+        dest: /usr/local/bin/
+        mode: 0755
