@@ -29,7 +29,7 @@ echo "clean-up task: local containers for $APP stopped on deployer server"
 
 # trigger swarm sync
 # TODO -q
-ssh -T -i /home/dokku/.ssh/id_ed25519_sync beamup@stremio-beamup-swarm-0 sync
+beamup-sync-app-config "$APP"
 
 # beamup-panel URL
 # https://github.com/Stremio/beamup-panel
@@ -44,4 +44,3 @@ echo -e "\e[0;33m\tNote: This URL will only be accessible if the"
 echo -e "\tBeamUp Panel is enabled and deployed.\e[0m"
 echo -e "\e[1;36m==================================================\e[0m"
 echo
-
