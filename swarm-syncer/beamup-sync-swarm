@@ -3,6 +3,7 @@
 const fs = require('fs')
 const http = require('http')
 const https = require('https')
+const path = require('path')
 const request = (http, args) => new Promise((resolve, reject) => http.request(args, resolve).on('error', reject).end(args.body))
 
 const START_PORT = 8000
@@ -16,6 +17,20 @@ const HEADER = `services:`
 // @TODO: assigning a random port may not be needed, just use the docker overlay network to reach the container (use it's IP)
 // @TODO: syslog for centralized log collection
 // @TODO implement a way so services are started after the registry, something like the depends_on
+// JSON strings are valid YAML double-quoted scalars. Escape '$' separately so
+// Compose does not interpolate secret values such as passwords containing '$'.
+const appEnvironment = (name, port) => {
+	const file = path.join(process.env.HOME, '.beamup-app-config', `${name}.json`)
+	const config = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : {}
+	const env = { ...config, PORT: String(port) }
+	return Object.entries(env).map(([key, value]) => {
+		if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(key) || typeof value !== 'string') {
+			throw new Error(`Invalid runtime config for ${name}`)
+		}
+		return `          ${key}: ${JSON.stringify(value.replace(/\$/g, '$$$$'))}`
+	}).join('\n')
+}
+
 const APP_TMPL = (appName, image, port) => `   ${appName}:
         image: ${image}
         deploy:
@@ -31,7 +46,7 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
               window: 5m
               delay: 60s
         environment:
-          - PORT=${port}
+${appEnvironment(appName, port)}
         command: /start web
         ports:
           - '${port}:${port}'
@@ -52,7 +67,7 @@ const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
               window: 5m
               delay: 60s
         environment:
-          - PORT=${port}
+${appEnvironment(appName, port)}
         ports:
           - '${port}:${port}'
 `
@@ -165,6 +180,7 @@ async function getConfigs() {
 	}
 }
 
+if (require.main === module) {
 const swarmCfg = process.argv[2]
 const nginxCfg = process.argv[3]
 if (!(swarmCfg && swarmCfg.endsWith('.yaml') && nginxCfg && nginxCfg.endsWith('.conf'))) {
@@ -172,7 +188,13 @@ if (!(swarmCfg && swarmCfg.endsWith('.yaml') && nginxCfg && nginxCfg.endsWith('.
 	process.exit(1)
 }
 getConfigs().then(cfgs => {
-	fs.writeFileSync(swarmCfg, cfgs.swarm)
+	const temp = `${swarmCfg}.${process.pid}.tmp`
+	try {
+		fs.writeFileSync(temp, cfgs.swarm, { mode: 0o600, flag: 'wx' })
+		fs.renameSync(temp, swarmCfg)
+	} finally {
+		if (fs.existsSync(temp)) fs.unlinkSync(temp)
+	}
 	fs.writeFileSync(nginxCfg, cfgs.nginx)
 	if (process.env.CF_TOKEN && process.env.CF_ORIGIN_IPS && process.env.CF_ZONE_ID) {
 		const ips = process.env.CF_ORIGIN_IPS.split(',')
@@ -194,3 +216,6 @@ getConfigs().then(cfgs => {
 		})
 	}
 })
+}
+
+module.exports = { APP_TMPL, APP_DOCKER_TMPL }

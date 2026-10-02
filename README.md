@@ -62,6 +62,17 @@ Setting/getting environment variables is similar to the way Dokku does it, howev
 
 For example: `ssh dokku@deployer.beamup.dev config:set 768c7b2546f2/hello NODE_ENV=production`
 
+App config is sent over the deployer's restricted SSH connection to the Swarm
+manager when an addon is deployed or `config:set` is called. The manager keeps
+an owner-readable snapshot and writes the values into the service environment
+on each sync. The generated `apps.yaml` also contains these values and is
+written with mode `0600`; anyone who can inspect Docker services on the manager
+can still read runtime environment variables. `PORT` remains managed by Beamup.
+
+After upgrading an existing installation, redeploy each existing addon (or
+run `beamup-sync-app-config <app-slug-with-dashes>` as the `dokku` user on the
+deployer) once to populate its runtime config snapshot.
+
 ### Addon application logs
 Logs of deployed addons can easily be fetched in way, similar to the way Dokku does it, however through ssh
 
