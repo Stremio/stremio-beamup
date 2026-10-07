@@ -6,7 +6,17 @@
         ctstate: ESTABLISHED,RELATED
         jump: ACCEPT
       notify: Save iptables rules
-    
+
+    # Required since Docker 29.8: swarm published ports on 127.0.0.1 are served
+    # by docker-proxy (INPUT on lo) instead of DNAT, so nginx -> 127.0.0.1:<port> needs this
+    - name: Allow loopback
+      iptables:
+        chain: INPUT
+        in_interface: lo
+        jump: ACCEPT
+        comment: Accept loopback traffic
+      notify: Save iptables rules
+
     - name: Allow ssh
       iptables:
         chain: INPUT
