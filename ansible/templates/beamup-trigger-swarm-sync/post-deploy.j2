@@ -50,7 +50,7 @@ docker push "$DST_IMAGE" # >/dev/null
 #  echo " !     delete-container: no containers found for $APP"
 #fi
 #dokku style:
-# dokku ps:stop "$APP" >/dev/null
+dokku ps:stop "$APP" >/dev/null
 # echo "clean-up task: local containers for $APP stopped on deployer server"
 
 # trigger swarm sync
