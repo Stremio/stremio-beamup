@@ -11,8 +11,34 @@ echo "Running beamup-trigger-swarm-sync post-deploy plugin trigger"
 # see https://github.com/dokku/dokku/blob/master/docs/development/plugin-triggers.md
 
 APP=$1
-docker tag dokku/$APP:latest localhost:5000/dokku/$APP:latest
-docker push localhost:5000/dokku/$APP:latest # >/dev/null
+SRC_IMAGE=dokku/$APP:latest
+DST_IMAGE=localhost:5000/dokku/$APP:latest
+
+# herokuish images already carry the app config (/app/.profile.d), but
+# dockerfile images don't: dokku only injects it via `docker run`, and the
+# swarm service only sets PORT. Bake the config into a thin layer on top of
+# the dokku image so it survives on the swarm. Always build FROM the dokku
+# image (never tag back onto it) so unset vars disappear on the next push.
+if [[ "$(dokku config:get "$APP" DOKKU_APP_TYPE)" == "dockerfile" ]]; then
+  BUILD_DIR=$(mktemp -d)
+  trap 'rm -rf "$BUILD_DIR"' EXIT
+  echo "FROM $SRC_IMAGE" > "$BUILD_DIR/Dockerfile"
+  BUILD_ARGS=()
+  # user vars only: skip dokku internals and PORT (swarm assigns PORT)
+  for KEY in $(dokku config:keys "$APP" | grep -Ev '^(DOKKU_.*|GIT_REV|PORT)$'); do
+    VALUE=$(dokku config:get "$APP" "$KEY")
+    if [[ "$VALUE" == *$'\n'* ]]; then
+      echo " !     config var $KEY contains a newline, not passed to the swarm"
+      continue
+    fi
+    printf 'ARG %s\nENV %s=$%s\n' "$KEY" "$KEY" "$KEY" >> "$BUILD_DIR/Dockerfile"
+    BUILD_ARGS+=(--build-arg "$KEY=$VALUE")
+  done
+  docker build -q -t "$DST_IMAGE" "${BUILD_ARGS[@]}" "$BUILD_DIR" >/dev/null
+else
+  docker tag "$SRC_IMAGE" "$DST_IMAGE"
+fi
+docker push "$DST_IMAGE" # >/dev/null
 
 # delete-container: remove the app's containers now that the swarm has
 # the image; this app is meant to run on the swarm, not on this host
@@ -25,7 +51,7 @@ docker push localhost:5000/dokku/$APP:latest # >/dev/null
 #fi
 #dokku style:
 dokku ps:stop "$APP" >/dev/null
-echo "clean-up task: local containers for $APP stopped on deployer server"
+# echo "clean-up task: local containers for $APP stopped on deployer server"
 
 # trigger swarm sync
 # TODO -q
