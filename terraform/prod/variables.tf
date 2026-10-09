@@ -1,3 +1,8 @@
+variable "docker_major_version" {
+  type    = string
+  default = "29"
+}
+
 variable "project_dir" {
   description = "The path to the main project directory"
   type        = string
