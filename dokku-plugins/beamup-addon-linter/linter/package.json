@@ -1,0 +1,10 @@
+{
+  "name": "beamup-addon-linter",
+  "version": "1.0.0",
+  "description": "Lints a deployed addon before it is pushed to the swarm",
+  "private": true,
+  "main": "lint.js",
+  "dependencies": {
+    "stremio-addon-linter": "^1.7.0"
+  }
+}

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+# args are $APP $CONTAINER_ID $PROC_TYPE $PORT $IP
+# see https://github.com/dokku/dokku/blob/master/docs/development/plugin-triggers.md
+#
+# check-deploy runs once the app's container is up but before dokku lets it serve
+# requests, and before the post-deploy trigger of the beamup-trigger-swarm-sync
+# plugin pushes the image to the registry and triggers the swarm sync. Exiting
+# non-zero fails the deploy, so an addon that does not pass the linter never
+# reaches the swarm.
+
+APP=$1
+PROC_TYPE=$3
+PORT=$4
+IP=$5
+
+# only the web process serves the addon manifest
+if [[ "$PROC_TYPE" != "web" ]]; then
+  exit 0
+fi
+
+PLUGIN_ROOT=$(cd "$(dirname "$0")" && pwd)
+NODE_BIN=$(command -v nodejs || command -v node)
+
+echo "-----> beamup-lint: checking $APP"
+
+# the linter prints nothing, everything it could say about the app would reach
+# whoever is pushing it
+set +e
+"$NODE_BIN" "$PLUGIN_ROOT/linter/lint.js" "http://${IP}:${PORT}"
+LINT_STATUS=$?
+set -e
+
+case "$LINT_STATUS" in
+  0)
+    echo "-----> beamup-lint: $APP is a valid Stremio addon"
+    ;;
+  1)
+    echo " !     beamup-lint: $APP is not a valid Stremio addon, refusing to deploy it" >&2
+    exit 1
+    ;;
+  *)
+    echo " !     beamup-lint: $APP could not be checked, please try again later" >&2
+    exit 1
+    ;;
+esac
