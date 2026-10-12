@@ -1,2 +1,4 @@
 ---
 plugin: cloud.terraform.terraform_provider
+# Explicit path avoids get_bin_path(required=True), which ansible-core >= 2.21 rejects
+binary_path: /usr/bin/terraform

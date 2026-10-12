@@ -3,6 +3,9 @@
 # Example values for all variables defined in variables.tf
 ###############################################
 
+# Docker CE version
+#docker_major_version = "29"
+
 # Path to the private SSH key
 #private_key = "../../id_deploy"
 

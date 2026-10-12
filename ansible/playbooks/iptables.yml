@@ -6,7 +6,17 @@
         ctstate: ESTABLISHED,RELATED
         jump: ACCEPT
       notify: Save iptables rules
-    
+
+    # Required since Docker 29.8: swarm published ports on 127.0.0.1 are served
+    # by docker-proxy (INPUT on lo) instead of DNAT, so nginx -> 127.0.0.1:<port> needs this
+    - name: Allow loopback
+      iptables:
+        chain: INPUT
+        in_interface: lo
+        jump: ACCEPT
+        comment: Accept loopback traffic
+      notify: Save iptables rules
+
     - name: Allow ssh
       iptables:
         chain: INPUT
@@ -40,27 +50,28 @@
         comment: Accept new HTTPS connections
       notify: Save iptables rules
 
-    - name: Allow SSH tunnels on port 5000 /destination port/
-      iptables:
-        chain: INPUT
-        protocol: tcp
-        destination_port: 5000
-        ctstate: NEW
-        syn: match
-        jump: ACCEPT
-        comment: Allow SSH tunel connections on dst port 5000
-      notify: Save iptables rules
-
-    - name: Allow SSH tunnels on port 5000 /source port/
-      iptables:
-        chain: INPUT
-        protocol: tcp
-        source_port: 5000
-        ctstate: NEW
-        syn: match
-        jump: ACCEPT
-        comment: Allow SSH tunel connections on src port 5000
-      notify: Save iptables rules
+        #    These gave access to registry from containers with Docker 29
+        #    - name: Allow SSH tunnels on port 5000 /destination port/
+        #      iptables:
+        #        chain: INPUT
+        #        protocol: tcp
+        #        destination_port: 5000
+        #        ctstate: NEW
+        #        syn: match
+        #        jump: ACCEPT
+        #        comment: Allow SSH tunel connections on dst port 5000
+        #      notify: Save iptables rules
+        #
+        #    - name: Allow SSH tunnels on port 5000 /source port/
+        #      iptables:
+        #        chain: INPUT
+        #        protocol: tcp
+        #        source_port: 5000
+        #        ctstate: NEW
+        #        syn: match
+        #        jump: ACCEPT
+        #        comment: Allow SSH tunel connections on src port 5000
+        #      notify: Save iptables rules
 
     - name: Set the policy for the INPUT chain to DROP
       iptables:
