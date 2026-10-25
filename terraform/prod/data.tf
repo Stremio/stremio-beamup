@@ -14,17 +14,6 @@ data "external" "workdir" {
   program = ["${var.project_dir}/scripts/fetch-workdir.sh"]
 }
 
-data "template_file" "ssh_tunnel_service" {
-  template = file("${var.project_dir}/ansible/files/secure-tunnel-swarm.service.tpl")
-
-  depends_on = [cherryservers_server.swarm]
-
-  vars = {
-    username = "${var.username}"
-    target   = "${cherryservers_server.swarm.0.ip_addresses[0].address}"
-  }
-}
-
 data "template_file" "beamup_sync_swarm" {
   template = file("${var.project_dir}/ansible/files/beamup-sync-swarm.sh.tpl")
 

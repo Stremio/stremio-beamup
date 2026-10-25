@@ -44,6 +44,19 @@
       loop: "{{ hostnames | product(user_homes) | list }}"
       when: hostnames is defined and hostnames | length > 0
 
+    - name: Ensure the /etc/beamup directory exists
+      file:
+        path: /etc/beamup
+        state: directory
+        mode: '0755'
+
+    - name: Generate the swarm node list used by beamup-swarm-target
+      copy:
+        content: "{{ hostnames | join('\n') }}\n"
+        dest: /etc/beamup/swarm-nodes
+        mode: '0644'
+      when: hostnames is defined and hostnames | length > 0
+
     
     # Fix file permissions
     - name: Fix file permissions for known_hosts in each user's home
@@ -95,19 +108,18 @@
         #        owner: dokku
         #        group: dokku
 
-    - name: Copy the secure tunnnel service file
-      copy:
-        src: ../../secure-tunnel-swarm.service
-        dest: /etc/systemd/system/secure-tunnel.service
-
-    - name: Copy the secure tunnnel service file
-      copy:
-        src: ../../secure-tunnel-swarm.service
-        dest: /etc/systemd/system/secure-tunnel.service
-
-    - name: Start the secure tunnnel service file
+    # The SSH tunnel to swarm-0:5000 is gone: the deployer is a swarm worker
+    # now and runs the registry itself, so localhost:5000 is served by the
+    # ingress mesh. The tunnel must not linger - its bind on port 5000 would
+    # conflict with the mesh publishing the registry port on this host.
+    - name: Stop and disable the legacy secure-tunnel service
       systemd:
         name: secure-tunnel.service
-        enabled: yes
-        masked: no
-        state: started
+        enabled: no
+        state: stopped
+      failed_when: false
+
+    - name: Remove the legacy secure-tunnel service file
+      file:
+        path: /etc/systemd/system/secure-tunnel.service
+        state: absent

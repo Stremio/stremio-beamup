@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+# Prints the hostname of the first healthy swarm manager node.
+# Used on the deployer so swarm communication (sync trigger, logs, deletion)
+# does not hard-depend on swarm-0 being up.
+#
+# A node is considered healthy when the restricted beamup SSH channel answers
+# the "swarm-nodes" command, which runs "docker node ls" remotely - this only
+# succeeds on a reachable manager that still has swarm quorum.
+
+set -o pipefail
+
+NODES_FILE="/etc/beamup/swarm-nodes"
+SSH_KEY="${BEAMUP_SYNC_KEY:-/home/dokku/.ssh/id_ed25519_sync}"
+CONNECT_TIMEOUT="${BEAMUP_SWARM_CONNECT_TIMEOUT:-5}"
+PROBE_TIMEOUT="${BEAMUP_SWARM_PROBE_TIMEOUT:-15}"
+
+if [ -s "$NODES_FILE" ]; then
+	NODES=$(cat "$NODES_FILE")
+else
+	# Fallback: swarm hostnames are kept in /etc/hosts by ansible
+	NODES=$(grep -oE 'stremio-beamup-swarm-[0-9]+' /etc/hosts | sort -u)
+fi
+
+if [ -z "$NODES" ]; then
+	echo "beamup-swarm-target: no swarm nodes configured (checked $NODES_FILE and /etc/hosts)" >&2
+	exit 1
+fi
+
+for NODE in $NODES; do
+	if timeout "$PROBE_TIMEOUT" ssh -T -o BatchMode=yes -o ConnectTimeout="$CONNECT_TIMEOUT" \
+		-i "$SSH_KEY" "beamup@$NODE" swarm-nodes >/dev/null 2>&1; then
+		echo "$NODE"
+		exit 0
+	fi
+	echo "beamup-swarm-target: $NODE is not responding, trying next node" >&2
+done
+
+echo "beamup-swarm-target: no healthy swarm manager found" >&2
+exit 1

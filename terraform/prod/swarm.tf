@@ -145,7 +145,10 @@ resource "null_resource" "swarm_docker_join" {
 }
 
 resource "null_resource" "swarm_docker_setup" {
-  depends_on = [null_resource.swarm_docker_join, null_resource.swarm_initial_setup]
+  # deployer_swarm_join must run first: the registry stack deployed below is
+  # constrained to the deployer via the role=registry node label that
+  # swarm_0_setup.yml applies
+  depends_on = [null_resource.swarm_docker_join, null_resource.swarm_initial_setup, null_resource.deployer_swarm_join]
 
   #
   # Run setup for swarm_0
@@ -203,7 +206,9 @@ resource "null_resource" "swarm_deployer_script" {
   }
 
   provisioner "local-exec" {
-    command = "ansible -T 30 -u ${var.username} -m copy -a 'src=beamup-sync-swarm.sh dest=/home/${var.username}/beamup-sync-swarm.sh mode=0755' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm_0"
+    # Installed on every swarm node so the deployer can trigger a sync on any
+    # healthy manager (see beamup-swarm-target), not only on swarm-0
+    command = "ansible -T 30 -u ${var.username} -m copy -a 'src=beamup-sync-swarm.sh dest=/home/${var.username}/beamup-sync-swarm.sh mode=0755' --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} swarm"
 
     environment = {
       TF_STATE = "./"
