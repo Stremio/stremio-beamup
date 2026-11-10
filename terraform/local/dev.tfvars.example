@@ -3,9 +3,6 @@
 # Example values for all variables defined in variables.tf
 ###############################################
 
-# Docker CE version
-#docker_major_version = "29"
-
 # Path to the private SSH key
 #private_key = "../../id_deploy"
 
@@ -52,3 +49,6 @@ deployer_disk_size = 21474836480  # 20GB
 swarm_memory = 4096
 swarm_vcpu = 2
 swarm_disk_size = 32212254720  # 30GB
+
+# Docker CE version
+#docker_major_version = "29"
