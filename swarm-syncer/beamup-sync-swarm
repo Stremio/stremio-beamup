@@ -27,8 +27,8 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
               cpus: '0.1'
               memory: 64M
           restart_policy:
-              max_attempts: 10
-              window: 5m
+              max_attempts: 5
+              window: 30m
               delay: 60s
         environment:
           - PORT=${port}
@@ -48,8 +48,8 @@ const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
               cpus: '0.1'
               memory: 64M
           restart_policy:
-              max_attempts: 10
-              window: 5m
+              max_attempts: 5
+              window: 30m
               delay: 60s
         environment:
           - PORT=${port}
