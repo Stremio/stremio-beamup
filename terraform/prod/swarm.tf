@@ -81,7 +81,7 @@ resource "null_resource" "swarm_install_docker" {
   }
 
   provisioner "local-exec" {
-    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${var.project_dir}/ansible/playbooks/docker.yml"
+    command = "ansible-playbook -T 30 -u root --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} --extra-vars 'docker_major_version=${var.docker_major_version}' ${var.project_dir}/ansible/playbooks/docker.yml"
 
     environment = {
       TF_STATE = "./"
