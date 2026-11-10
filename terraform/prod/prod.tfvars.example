@@ -52,3 +52,6 @@ image  = "debian_12_64bit"
 # Virtual Servers no longer have Debian 10 and that is needed for Dokku v0.20.
 deployer_plan_slug = "cloud_vds_6" # ID 720
 swarm_plan_slug    = "cloud_vds_6" # ID 720
+
+# Docker CE version
+#docker_major_version = "29"
