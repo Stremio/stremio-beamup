@@ -16,9 +16,17 @@ const HEADER = `services:`
 // @TODO: assigning a random port may not be needed, just use the docker overlay network to reach the container (use it's IP)
 // @TODO: syslog for centralized log collection
 // @TODO implement a way so services are started after the registry, something like the depends_on
+// Apps are constrained to manager nodes so they never land on the deployer
+// (the swarm's only worker, which runs the registry); start-first ordering
+// keeps rolling updates zero-downtime.
 const APP_TMPL = (appName, image, port) => `   ${appName}:
         image: ${image}
         deploy:
+          placement:
+            constraints:
+              - node.role == manager
+          update_config:
+            order: start-first
           resources:
             limits:
               cpus: '1.2'
@@ -40,6 +48,11 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
 const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
         image: ${image}
         deploy:
+          placement:
+            constraints:
+              - node.role == manager
+          update_config:
+            order: start-first
           resources:
             limits:
               cpus: '1.2'

@@ -122,15 +122,34 @@ resource "null_resource" "deployer_setup" {
   }
 }
 
+# Join the deployer to the swarm as a worker. The registry service is pinned
+# to it (node.labels.role == registry, set by swarm_0_setup.yml) and the
+# ingress mesh keeps localhost:5000 working on every node, so dokku pushes and
+# swarm pulls need no SSH tunnel anymore.
+# Addon services are constrained to manager nodes, so nothing else gets
+# scheduled here. Joining as a worker keeps the manager count at 3 (quorum 2).
+resource "null_resource" "deployer_swarm_join" {
+  depends_on = [null_resource.deployer_setup, null_resource.swarm_os_setup, data.external.swarm_tokens]
+
+  connection {
+    private_key = file(var.private_key)
+    host        = cherryservers_server.deployer.ip_addresses[0].address
+  }
+
+  provisioner "remote-exec" {
+    inline = [
+      # bind-mount source for the registry service's data
+      "mkdir -p /var/lib/registry",
+      format("docker info --format '{{.Swarm.LocalNodeState}}' | grep -qx active || docker swarm join --token %s --advertise-addr %s %s:2377", data.external.swarm_tokens.result.worker, cherryservers_server.deployer.ip_addresses[1].address, cherryservers_server.swarm.0.ip_addresses[1].address)
+    ]
+  }
+}
+
 resource "null_resource" "deployer_tunnel_setup" {
-  depends_on = [data.template_file.ssh_tunnel_service, null_resource.ansible_swarm_disable_swap]
+  depends_on = [null_resource.ansible_swarm_disable_swap]
 
   provisioner "local-exec" {
     command = "rm -f ${var.deployer_tunnel_key} && rm -f ${var.deployer_tunnel_key}.pub && ssh-keygen -t ed25519 -f ${var.deployer_tunnel_key} -C 'dokku@stremio-addon-deployer' -q -N ''"
-  }
-
-  provisioner "local-exec" {
-    command = format("cat <<\"EOF\" > \"%s\"\n%s\nEOF", "../../secure-tunnel-swarm.service", data.template_file.ssh_tunnel_service.rendered)
   }
 
   provisioner "local-exec" {

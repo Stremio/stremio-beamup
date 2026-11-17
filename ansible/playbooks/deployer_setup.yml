@@ -34,21 +34,27 @@
     - name: Install the beamup dokku plugins
       shell: 'dokku plugin:install'
 
-    - name: Install the beamup scripts [1/2]
+    - name: Install the beamup scripts [1/4]
       copy:
         src: ../../scripts/beamup-entry
         dest: /usr/local/bin/
         mode: 0755
 
-    - name: Install the beamup scripts [2/3]
+    - name: Install the beamup scripts [2/4]
       copy:
         src: ../../scripts/beamup-sync-keys
         dest: /usr/local/bin/
         mode: 0755
 
-    - name: Install the beamup scripts [3/3]
+    - name: Install the beamup scripts [3/4]
       copy:
         src: ../../scripts/beamup-ban-user
+        dest: /usr/local/bin/
+        mode: 0755
+
+    - name: Install the beamup scripts [4/4]
+      copy:
+        src: ../../scripts/beamup-swarm-target
         dest: /usr/local/bin/
         mode: 0755
 
