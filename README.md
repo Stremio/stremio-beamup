@@ -57,6 +57,8 @@ By default, this will bootstrap a single server called `deployer` that can be us
 
 Use [beamup-cli](https://github.com/Stremio/stremio-beamup-cli) to deploy addons.
 
+Deployed addons must follow the [abuse policy](ABUSE_POLICY.md).
+
 ### Setting environment variables
 Setting/getting environment variables is similar to the way Dokku does it, however you do it through ssh, and you need to pass the same addon slug that's used in the git remote that `./cli/beamup` adds.
 
@@ -82,5 +84,8 @@ No - it performs addon-specific checks/optimizations. You can easily modify it f
 
 ### Does it only support nodejs?
 No, it supports every stack that there's a heroku buildpack for, as well as any repo that has a `Dockerfile`.
+
+### What is my addon not allowed to do?
+See the [abuse policy](ABUSE_POLICY.md): no scanning or proxy harvesting, no storing media, at most 5 GB of disk and 24 deploys per addon per day, and no extra accounts to get around the rules.
 
 ## ToDo
