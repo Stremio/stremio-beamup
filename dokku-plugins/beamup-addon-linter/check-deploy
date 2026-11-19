@@ -24,6 +24,7 @@ fi
 PLUGIN_ROOT=$(cd "$(dirname "$0")" && pwd)
 NODE_BIN=$(command -v nodejs || command -v node)
 
+echo "-----> beamup: deployed addons must follow the abuse policy: https://github.com/Stremio/stremio-beamup/blob/master/ABUSE_POLICY.md"
 echo "-----> beamup-lint: checking $APP"
 
 # the linter prints nothing, everything it could say about the app would reach
