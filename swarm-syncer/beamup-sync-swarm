@@ -6,7 +6,7 @@ const https = require('https')
 const request = (http, args) => new Promise((resolve, reject) => http.request(args, resolve).on('error', reject).end(args.body))
 
 const START_PORT = 8000
-const TOTAL_APP_LIMIT = 400
+const TOTAL_APP_LIMIT = 700
 const REGISTRY_URL = 'http://127.0.0.1:5000'
 
 // https://docs.docker.com/compose/compose-file/04-version-and-name/#version-top-level-element-obsolete
@@ -24,11 +24,11 @@ const APP_TMPL = (appName, image, port) => `   ${appName}:
               cpus: '1.2'
               memory: 1024M
             reservations:
-              cpus: '0.1'
+              cpus: '0.05'
               memory: 64M
           restart_policy:
-              max_attempts: 10
-              window: 5m
+              max_attempts: 5
+              window: 30m
               delay: 60s
         environment:
           - PORT=${port}
@@ -45,11 +45,11 @@ const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
               cpus: '1.2'
               memory: 1024M
             reservations:
-              cpus: '0.1'
+              cpus: '0.05'
               memory: 64M
           restart_policy:
-              max_attempts: 10
-              window: 5m
+              max_attempts: 5
+              window: 30m
               delay: 60s
         environment:
           - PORT=${port}
@@ -68,7 +68,7 @@ const APP_DOCKER_TMPL = (appName, image, port) => `   ${appName}:
 //        - subnet: 10.2.0.0/16
 //`
 
-const APP_NGINX_TMPL = (appName, port) => `proxy_cache_path /var/lib/nginx/cache_${appName} levels=1:2 keys_zone=${appName}_cache:10m max_size=1g inactive=600m use_temp_path=off;
+const APP_NGINX_TMPL = (appName, port) => `proxy_cache_path /var/lib/nginx/cache_${appName} levels=1:2 keys_zone=${appName}_cache:10m max_size=1g inactive=10m use_temp_path=off manager_files=50000 manager_threshold=10000ms manager_sleep=1ms loader_files=2000 loader_threshold=1000ms loader_sleep=2ms;
 upstream ${appName} {
         server 127.0.0.1:${port};
         keepalive 300;
