@@ -108,9 +108,9 @@ resource "null_resource" "ansible_os_tuning" {
     }
   }
 
-  #Tuning limits for user www-data for nginx only on first swarm node (balancer)
+  #Tuning for all swarm nodes (limits for user www-data are for nginx on swarm_0)
   provisioner "local-exec" {
-    command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${var.project_dir}/ansible/playbooks/os_tuning.yml -e user=www-data --limit swarm_0"
+    command = "ansible-playbook -b -u ${var.username} --ssh-extra-args='-o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no' --inventory=${var.terraform_inventory_path} ${var.project_dir}/ansible/playbooks/os_tuning.yml -e user=www-data --limit swarm"
 
     environment = {
       TF_STATE = "./"

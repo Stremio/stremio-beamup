@@ -16,19 +16,38 @@
         state: present
         reload: yes
       loop:
-        - { name: 'fs.file-max', value: '200000' }
-        - { name: 'kernel.pid_max', value: '65535' }
+        # System-wide cap on open files: above the per-process maximum
+        # (1048576), as protection against fd leaks
+        - { name: 'fs.file-max', value: '2097152' }
+        - { name: 'kernel.pid_max', value: '4194304' }
         - { name: 'net.core.rmem_default', value: '26214400' }
         - { name: 'net.core.rmem_max', value: '26214400' }
         - { name: 'net.core.wmem_default', value: '2621440' }
         - { name: 'net.core.wmem_max', value: '2621440' }
-        - { name: 'net.core.somaxconn', value: '10000' }
+        - { name: 'net.core.somaxconn', value: '65535' }
+        - { name: 'net.ipv4.tcp_max_syn_backlog', value: '65535' }
         - { name: 'vm.swappiness', value: '0' }
         # https://askubuntu.com/questions/1472428/why-i-got-failed-to-allocate-directory-watch-too-many-open-files
         # fs.inotify
-        - { name: 'fs.inotify.max_user_instances', value: '1024'}
+        - { name: 'fs.inotify.max_user_instances', value: '8192'}
         - { name: 'fs.inotify.max_queued_events', value: '32768'}
-        - { name: 'fs.inotify.max_user_watches', value: '24440'}
+        - { name: 'fs.inotify.max_user_watches', value: '1048576'}
+
+    # With a /32 address and an on-link default route, the kernel keeps one
+    # ARP entry per remote IP. Busy nodes can exceed the default limits
+    # (128/512/1024), which drops traffic
+    # ("neighbour: arp_cache: neighbor table overflow!").
+    - name: Raise ARP neighbour table limits
+      ansible.posix.sysctl:
+        name: "{{ item.name }}"
+        value: "{{ item.value }}"
+        sysctl_file: /etc/sysctl.d/99-neigh.conf
+        state: present
+        reload: yes
+      loop:
+        - { name: net.ipv4.neigh.default.gc_thresh1, value: 8192 }
+        - { name: net.ipv4.neigh.default.gc_thresh2, value: 49152 }
+        - { name: net.ipv4.neigh.default.gc_thresh3, value: 65536 }
 
     - name: change value limits.conf
       pam_limits:
@@ -46,17 +65,26 @@
       lineinfile:
         path: "/etc/systemd/{{ item }}"
         regexp: 'DefaultLimitNPROC'
-        line: DefaultLimitNPROC=65535
+        line: DefaultLimitNPROC=262144
       loop:
         - 'system.conf' 
         - 'user.conf' 
+      notify: Reexecute systemd
 
     - name: Configure NOFILE limit for systemd services
       lineinfile:
         path: "/etc/systemd/{{ item }}"
         regexp: 'DefaultLimitNOFILE'
-        line: DefaultLimitNOFILE=200000
+        line: DefaultLimitNOFILE=200000:1048576
       loop:
         - 'system.conf' 
         - 'user.conf' 
+      notify: Reexecute systemd
+
+  handlers:
+    # Makes systemd pick up the new DefaultLimit* values. Running services keep
+    # their current limits until they are restarted (or the node reboots).
+    - name: Reexecute systemd
+      ansible.builtin.systemd:
+        daemon_reexec: true
 ...
