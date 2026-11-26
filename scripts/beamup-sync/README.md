@@ -93,6 +93,7 @@ RSYNC_PASSWORD=""
   - `/home/dokku` (Dokku app directories)
   - `/etc/ssh/ssh_host_*`
   - `/etc/cron.daily` (and `/etc/crontab` if present)
+  - `/etc/beamup/ban_list.txt` if present (merged with the host's list on restore)
 - Backups exclude Dokku app cache directories (`/home/dokku/*/cache/*`).
 - Restore flow creates missing Dokku apps first, restores `/home/dokku` without `.ssh`,
   restores `/etc/ssh/ssh_host_*` and restarts SSH, then applies ownership/perms.

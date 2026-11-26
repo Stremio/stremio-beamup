@@ -102,6 +102,15 @@ if [ -f "/etc/crontab" ]; then
     fi
 fi
 
+# Include the ban list when present (beamup-entry rejects banned users).
+if [ -f "/etc/beamup/ban_list.txt" ]; then
+    rel="etc/beamup/ban_list.txt"
+    if [ -z "${seen[$rel]:-}" ]; then
+        selected+=("$rel")
+        seen[$rel]=1
+    fi
+fi
+
 # Require at least one SSH host key and include all present keys.
 shopt -s nullglob
 ssh_host_keys=(/etc/ssh/ssh_host_*)

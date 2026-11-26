@@ -159,6 +159,17 @@ log_info "Restoring /home/dokku/.ssh/authorized_keys"
 mkdir -p /home/dokku/.ssh
 cp "$tmp_dir/home/dokku/.ssh/authorized_keys" /home/dokku/.ssh/authorized_keys
 
+# Restore the ban list, merged with any bans already on this host.
+if [ -f "$tmp_dir/etc/beamup/ban_list.txt" ]; then
+    log_info "Restoring /etc/beamup/ban_list.txt"
+    mkdir -p /etc/beamup
+    touch /etc/beamup/ban_list.txt
+    sort -u "$tmp_dir/etc/beamup/ban_list.txt" /etc/beamup/ban_list.txt > "$tmp_dir/ban_list.merged"
+    cp "$tmp_dir/ban_list.merged" /etc/beamup/ban_list.txt
+    chown root:root /etc/beamup/ban_list.txt
+    chmod 644 /etc/beamup/ban_list.txt
+fi
+
 # Restore SSH host keys and restart sshd.
 log_info "Restoring /etc/ssh/ssh_host_*"
 for key in "${restored_ssh_keys[@]}"; do
