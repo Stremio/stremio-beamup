@@ -125,7 +125,8 @@ log_info "Applying files"
 
 if command -v dokku >/dev/null 2>&1; then
     declare -A existing_apps=()
-    mapfile -t dokku_apps_before < <(dokku apps:list --quiet 2>> "$LOG_FILE" || true)
+    # --quiet is a global dokku flag; "apps:list --quiet" is rejected by Dokku 0.34.
+    mapfile -t dokku_apps_before < <(dokku --quiet apps:list 2>> "$LOG_FILE" || true)
     for app in "${dokku_apps_before[@]}"; do
         [ -n "$app" ] || continue
         existing_apps["$app"]=1
